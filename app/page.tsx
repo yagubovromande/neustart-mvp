@@ -1,246 +1,246 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ComponentType } from "react";
+import {
+  ArrowUpRight,
+  Bot,
+  BriefcaseBusiness,
+  CalendarDays,
+  ChevronRight,
+  GraduationCap,
+  Home,
+  Inbox,
+  Languages,
+  MessageSquare,
+  Network,
+  PanelsTopLeft,
+  Plus,
+  Sparkles,
+  UserRound,
+  Users,
+  X,
+} from "lucide-react";
 
-type Screen =
-  | "home"
-  | "profile"
-  | "people"
-  | "weekly"
-  | "contacts"
-  | "events"
-  | "partners"
-  | "admin";
+import {
+  eventsByLocale,
+  partnersByLocale,
+  peopleByLocale,
+  profileTags,
+  servicesByLocale,
+  translations,
+  type Locale,
+  type Person,
+  type Screen,
+} from "./i18n";
 
-const demoPeople = [
-  {
-    id: 1,
-    name: "Анна Краузе",
-    age: 34,
-    city: "Düsseldorf",
-    profession: "Учитель немецкого",
-    language: "B2",
-    photo: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=300&h=300&fit=crop",
-    about: "Переехала в Германию как поздняя переселенка. Помогаю новичкам адаптироваться, найти языковые курсы и не бояться первых документов.",
-    interests: ["Немецкий язык", "Семья", "Документы"],
-    lookingFor: ["Общение", "Помощь с документами", "Друзей"],
-    reason: "Совпадает город и интерес к немецкому языку",
-  },
-  {
-    id: 2,
-    name: "Михаил Вебер",
-    age: 41,
-    city: "Köln",
-    profession: "Предприниматель",
-    language: "B1",
-    photo: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&h=300&fit=crop",
-    about: "Развиваю небольшой сервисный бизнес. Ищу людей для обмена опытом, совместных проектов и локального нетворкинга.",
-    interests: ["Бизнес", "Работа", "IT"],
-    lookingFor: ["Бизнес-партнёров", "Клиентов", "Общение"],
-    reason: "Ищет бизнес-партнёров",
-  },
-  {
-    id: 3,
-    name: "Елена Шмидт",
-    age: 29,
-    city: "Dortmund",
-    profession: "HR-специалист",
-    language: "C1",
-    photo: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=300&h=300&fit=crop",
-    about: "Помогаю разобраться с резюме, собеседованиями и первыми шагами на немецком рынке труда.",
-    interests: ["Работа", "Немецкий язык", "Карьера"],
-    lookingFor: ["Работу", "Наставника", "Общение"],
-    reason: "Может помочь с поиском работы",
-  },
-  {
-    id: 4,
-    name: "Андрей Гофман",
-    age: 38,
-    city: "Neuss",
-    profession: "Автомеханик",
-    language: "A2",
-    photo: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=300&h=300&fit=crop",
-    about: "Живу рядом с Düsseldorf. Интересуюсь автомобилями, спортом и локальными встречами по выходным.",
-    interests: ["Авто", "Спорт", "Друзья"],
-    lookingFor: ["Друзей", "Совместный отдых", "Общение"],
-    reason: "Рядом с вашим городом",
-  },
-  {
-    id: 5,
-    name: "Наталья Беккер",
-    age: 36,
-    city: "Düsseldorf",
-    profession: "Мама, бухгалтер",
-    language: "B1",
-    photo: "https://images.unsplash.com/photo-1544723795-3fb6469f5b39?w=300&h=300&fit=crop",
-    about: "Ищу семьи с детьми для общения, прогулок и обмена опытом жизни в Германии.",
-    interests: ["Семья", "Дети", "Культура"],
-    lookingFor: ["Друзей", "Совместный отдых", "Общение"],
-    reason: "Семья с детьми и общий город",
-  },
+type IconType = ComponentType<{ className?: string }>;
+
+const serviceIcons: IconType[] = [
+  BriefcaseBusiness,
+  Users,
+  GraduationCap,
+  Network,
 ];
 
-const events = [
-  {
-    title: "Языковой клуб B1",
-    city: "Düsseldorf",
-    date: "Среда, 18:00",
-    org: "Riwvel",
-    description: "Живое общение на немецком для поздних переселенцев.",
-  },
-  {
-    title: "Встреча поздних переселенцев NRW",
-    city: "Köln",
-    date: "Суббота, 14:00",
-    org: "Riwvel",
-    description: "Знакомства, обмен опытом, ответы на бытовые вопросы.",
-  },
-  {
-    title: "Вебинар: как искать работу в Германии",
-    city: "Online",
-    date: "Четверг, 19:30",
-    org: "NeuStart",
-    description: "Резюме, Jobcenter, собеседования и первые шаги.",
-  },
+const navItems: Array<{
+  screen: Screen | "more";
+  labelKey: "home" | "profile" | "people" | "weekly" | "contacts" | "more";
+  icon: IconType;
+}> = [
+  { screen: "home", labelKey: "home", icon: Home },
+  { screen: "profile", labelKey: "profile", icon: UserRound },
+  { screen: "people", labelKey: "people", icon: Users },
+  { screen: "weekly", labelKey: "weekly", icon: Sparkles },
+  { screen: "contacts", labelKey: "contacts", icon: MessageSquare },
+  { screen: "more", labelKey: "more", icon: PanelsTopLeft },
 ];
 
-const partners = [
-  {
-    title: "Медицинское страхование",
-    category: "Страхование",
-    description: "Помощь с выбором Krankenkasse и базовыми вопросами.",
-  },
-  {
-    title: "Курсы немецкого",
-    category: "Обучение",
-    description: "Подбор языковых курсов и интеграционных программ.",
-  },
-  {
-    title: "Банк и счёт",
-    category: "Финансы",
-    description: "Помощь с открытием счёта и базовой финансовой адаптацией.",
-  },
-  {
-    title: "Юридическая консультация",
-    category: "Документы",
-    description: "Навигация по типовым вопросам переезда и интеграции.",
-  },
-];
-
-export default function Home() {
+export default function HomePage() {
   const [screen, setScreen] = useState<Screen>("home");
+  const [locale, setLocale] = useState<Locale>("de");
   const [contacts, setContacts] = useState<number[]>([]);
-  const [selectedPerson, setSelectedPerson] = useState(demoPeople[0]);
-  const [photoPreview, setPhotoPreview] = useState<string>("");
+  const [selectedPersonId, setSelectedPersonId] = useState(1);
+  const [photoPreview, setPhotoPreview] = useState("");
+
+  const t = translations[locale];
+  const people = peopleByLocale[locale];
+  const events = eventsByLocale[locale];
+  const partners = partnersByLocale[locale];
+  const services = servicesByLocale[locale];
+  const selectedPerson =
+    people.find((person) => person.id === selectedPersonId) ?? people[0];
 
   function addContact(id: number) {
     setContacts((prev) => (prev.includes(id) ? prev : [...prev, id]));
   }
 
   return (
-    <main className="min-h-screen bg-[#f4f7fb] text-slate-900">
-      <div className="mx-auto flex min-h-screen max-w-md flex-col bg-white shadow-2xl">
-        <header className="sticky top-0 z-20 border-b border-slate-100 bg-white/95 px-5 py-4 backdrop-blur">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-blue-600">
-                Telegram Mini App
+    <main className="relative min-h-screen overflow-hidden bg-[#050816] text-[#F5F7FA]">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute left-1/2 top-[-180px] h-[420px] w-[420px] -translate-x-1/2 rounded-full bg-[#007AFF]/20 blur-[120px]" />
+        <div className="absolute left-[-120px] top-[280px] h-[320px] w-[320px] rounded-full bg-cyan-400/10 blur-[120px]" />
+        <div className="absolute bottom-[120px] right-[-140px] h-[360px] w-[360px] rounded-full bg-blue-500/14 blur-[140px]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.08),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0))]" />
+      </div>
+
+      <div className="relative mx-auto flex min-h-screen max-w-md flex-col border-x border-white/8 bg-[rgba(8,12,24,0.72)] shadow-[0_40px_120px_-50px_rgba(0,0,0,0.92)] backdrop-blur-[28px]">
+        <header className="sticky top-0 z-20 border-b border-white/8 bg-[rgba(8,12,24,0.6)] px-5 py-4 backdrop-blur-[28px]">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.35em] text-[#8FA8D6]">
+                {t.appLabel}
               </p>
-              <h1 className="text-2xl font-black tracking-tight">NeuStart</h1>
+              <h1 className="mt-1 text-[2rem] font-semibold tracking-[-0.04em] text-white">
+                {t.brand}
+              </h1>
             </div>
-            <button
-              onClick={() => setScreen("admin")}
-              className="rounded-full bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-600"
-            >
-              Demo Admin
-            </button>
+            <div className="flex shrink-0 items-center gap-2 self-start">
+              <button
+                onClick={() => setScreen("admin")}
+                className="h-8 whitespace-nowrap rounded-full border border-white/10 bg-white/[0.06] px-3 text-[11px] font-medium text-[#C5CFDD] shadow-[0_10px_30px_-18px_rgba(0,0,0,0.8)] backdrop-blur-xl transition-all duration-200 hover:border-white/16 hover:bg-white/[0.09]"
+              >
+                {t.admin}
+              </button>
+              <div
+                className="flex h-8 items-center rounded-full border border-white/10 bg-white/[0.06] px-1 text-[11px] font-medium text-[#8A94A6] shadow-[0_10px_30px_-18px_rgba(0,0,0,0.8)] backdrop-blur-xl"
+                aria-label={t.languageSwitcherLabel}
+              >
+                <button
+                  onClick={() => setLocale("de")}
+                  className={`flex h-6 items-center rounded-full px-2.5 transition-all duration-200 ${
+                    locale === "de"
+                      ? "bg-[#007AFF] text-white shadow-[0_0_26px_rgba(0,122,255,0.55)]"
+                      : "text-[#8A94A6] hover:text-white"
+                  }`}
+                >
+                  {t.localeButtons.de}
+                </button>
+                <span className="px-1 text-white/18">|</span>
+                <button
+                  onClick={() => setLocale("ru")}
+                  className={`flex h-6 items-center rounded-full px-2.5 transition-all duration-200 ${
+                    locale === "ru"
+                      ? "bg-[#007AFF] text-white shadow-[0_0_26px_rgba(0,122,255,0.55)]"
+                      : "text-[#8A94A6] hover:text-white"
+                  }`}
+                >
+                  {t.localeButtons.ru}
+                </button>
+              </div>
+            </div>
           </div>
         </header>
 
-        <section className="flex-1 overflow-y-auto px-5 pb-28 pt-5">
+        <section className="flex-1 overflow-y-auto px-5 pb-32 pt-5">
           {screen === "home" && (
             <div className="space-y-5">
-              <div className="rounded-[2rem] bg-gradient-to-br from-blue-600 to-cyan-500 p-6 text-white shadow-xl">
-                <p className="mb-2 text-sm font-semibold opacity-90">
-                  Сообщество поздних переселенцев Германии
-                </p>
-                <h2 className="text-3xl font-black leading-tight">
-                  Найдите своих людей в новом городе
+              <div className="overflow-hidden rounded-[32px] border border-white/10 bg-[linear-gradient(135deg,rgba(11,18,36,0.92),rgba(9,30,68,0.86)_52%,rgba(0,122,255,0.72))] p-6 shadow-[0_35px_90px_-45px_rgba(0,122,255,0.75)]">
+                <div className="pointer-events-none absolute" />
+                <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-[11px] font-medium text-[#C6D5F2] backdrop-blur-xl">
+                  <Sparkles className="h-3.5 w-3.5 text-[#8DC0FF]" />
+                  {t.homeTag}
+                </div>
+                <h2 className="mt-4 text-[2.15rem] font-semibold leading-[1.02] tracking-[-0.05em] text-white">
+                  {t.homeTitle}
                 </h2>
-                <p className="mt-4 text-sm leading-6 text-blue-50">
-                  NeuStart помогает русским немцам знакомиться, находить поддержку,
-                  события, партнёров и полезные сервисы после переезда.
+                <p className="mt-4 max-w-[30ch] text-sm leading-7 text-[#D8E6FF]">
+                  {t.homeText}
                 </p>
                 <div className="mt-6 grid grid-cols-2 gap-3">
                   <button
                     onClick={() => setScreen("profile")}
-                    className="rounded-2xl bg-white px-4 py-3 text-sm font-bold text-blue-700"
+                    className="rounded-[20px] border border-white/10 bg-white/[0.12] px-4 py-3 text-sm font-medium text-white backdrop-blur-2xl transition-all duration-200 hover:bg-white/[0.18]"
                   >
-                    Создать анкету
+                    {t.createProfile}
                   </button>
                   <button
                     onClick={() => setScreen("people")}
-                    className="rounded-2xl bg-blue-900/30 px-4 py-3 text-sm font-bold text-white ring-1 ring-white/30"
+                    className="rounded-[20px] bg-[#007AFF] px-4 py-3 text-sm font-medium text-white shadow-[0_18px_40px_-18px_rgba(0,122,255,0.75)] transition-all duration-200 hover:translate-y-[-1px] hover:shadow-[0_22px_52px_-18px_rgba(0,122,255,0.82)]"
                   >
-                    Найти людей
+                    {t.findPeople}
                   </button>
                 </div>
               </div>
 
               <div className="grid grid-cols-3 gap-3">
-                <Stat value="3 000" label="аудитория Riwvel" />
-                <Stat value="612" label="активных профилей" />
-                <Stat value="84" label="новых за неделю" />
+                {t.stats.map((stat) => (
+                  <Stat key={stat.label} value={stat.value} label={stat.label} />
+                ))}
               </div>
 
-              <BlockTitle
-                title="Подборка недели"
-                text="Каждую неделю NeuStart предлагает новых людей по тегам “ищу”, интересам и городу."
-              />
+              <BlockTitle title={t.weeklyTitle} text={t.weeklyText} />
               <div className="space-y-3">
-                {demoPeople.slice(0, 3).map((p) => (
-                  <PersonMini
-                    key={p.id}
-                    person={p}
+                {people.slice(0, 3).map((person) => (
+                  <WeeklyPickCard
+                    key={person.id}
+                    person={person}
+                    buttonLabel={t.weeklyConnect}
                     onClick={() => {
-                      setSelectedPerson(p);
+                      setSelectedPersonId(person.id);
                       setScreen("people");
                     }}
                   />
                 ))}
               </div>
 
-              <BlockTitle
-  title="Почему это важно"
-  text="Поздние переселенцы часто начинают жизнь в Германии без локального круга общения. NeuStart помогает быстрее найти людей, события, поддержку и полезные сервисы."
+              <BlockTitle title={t.eventOfWeekTitle} text={t.eventOfWeekText} />
+              <FeaturedEventCard
+                event={events[0]}
+                badge={t.eventBadge}
+                joinLabel={t.join}
               />
+
+              <BlockTitle
+                title={t.usefulServicesTitle}
+                text={t.usefulServicesText}
+              />
+              <div className="grid grid-cols-2 gap-3">
+                {services.map((service, index) => (
+                  <ServiceCard
+                    key={service.title}
+                    title={service.title}
+                    subtitle={service.subtitle}
+                    icon={serviceIcons[index] ?? PanelsTopLeft}
+                  />
+                ))}
+              </div>
+
+              <AIAssistantCard
+                title={t.aiAssistantTitle}
+                text={t.aiAssistantText}
+                bullets={t.aiAssistantBullets}
+                buttonLabel={t.aiAssistantButton}
+              />
+
+              <BlockTitle title={t.whyTitle} text={t.whyText} />
             </div>
           )}
 
           {screen === "profile" && (
             <div className="space-y-5">
-              <BlockTitle
-                title="Анкета участника"
-                text="Фото обязательно: так сообществу проще доверять друг другу."
-              />
+              <BlockTitle title={t.profileTitle} text={t.profileText} />
 
-              <div className="rounded-3xl border border-slate-100 bg-slate-50 p-4">
-                <label className="mb-2 block text-sm font-bold">Фото профиля</label>
+              <div className="rounded-[28px] border border-white/10 bg-white/[0.05] p-4 shadow-[0_30px_80px_-52px_rgba(0,0,0,1)] backdrop-blur-[24px]">
+                <label className="mb-3 block text-sm font-medium text-white">
+                  {t.profilePhoto}
+                </label>
                 <div className="flex items-center gap-4">
-                  <div className="h-20 w-20 overflow-hidden rounded-3xl bg-slate-200">
+                  <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-[24px] border border-white/10 bg-white/[0.06]">
                     {photoPreview ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={photoPreview} alt="preview" className="h-full w-full object-cover" />
+                      <img
+                        src={photoPreview}
+                        alt={t.profilePhotoAlt}
+                        className="h-full w-full object-cover"
+                      />
                     ) : (
-                      <div className="flex h-full w-full items-center justify-center text-2xl">
-                        📷
-                      </div>
+                      <UserRound className="h-8 w-8 text-[#8FA8D6]" />
                     )}
                   </div>
                   <input
                     type="file"
                     accept="image/*"
-                    className="text-sm"
+                    className="w-full text-sm text-[#8A94A6] file:mr-3 file:rounded-full file:border file:border-white/10 file:bg-white/[0.06] file:px-4 file:py-2 file:text-xs file:font-medium file:text-white file:backdrop-blur-xl"
                     onChange={(e) => {
                       const file = e.target.files?.[0];
                       if (file) setPhotoPreview(URL.createObjectURL(file));
@@ -249,91 +249,97 @@ export default function Home() {
                 </div>
               </div>
 
-              <FormInput label="Имя" placeholder="Например: Роман" />
-              <FormInput label="Возраст" placeholder="43" />
-              <FormInput label="Город в Германии" placeholder="Düsseldorf" />
-              <FormInput label="Страна / регион происхождения" placeholder="Россия, Казахстан..." />
-              <FormInput label="Год переезда" placeholder="2024" />
-              <FormInput label="Профессия" placeholder="Предприниматель" />
+              <FormInput
+                label={t.profileFields.name}
+                placeholder={t.profilePlaceholders.name}
+              />
+              <FormInput
+                label={t.profileFields.age}
+                placeholder={t.profilePlaceholders.age}
+              />
+              <FormInput
+                label={t.profileFields.city}
+                placeholder={t.profilePlaceholders.city}
+              />
+              <FormInput
+                label={t.profileFields.origin}
+                placeholder={t.profilePlaceholders.origin}
+              />
+              <FormInput
+                label={t.profileFields.moveYear}
+                placeholder={t.profilePlaceholders.moveYear}
+              />
+              <FormInput
+                label={t.profileFields.profession}
+                placeholder={t.profilePlaceholders.profession}
+              />
               <textarea
-                className="min-h-28 w-full rounded-2xl border border-slate-200 bg-white p-4 text-sm outline-none focus:border-blue-500"
-                placeholder="Расскажите о себе минимум 2 предложения..."
+                className="min-h-28 w-full rounded-[24px] border border-white/10 bg-white/[0.05] p-4 text-sm text-white outline-none backdrop-blur-[24px] placeholder:text-[#6F7B90] focus:border-[#007AFF] focus:bg-white/[0.08]"
+                placeholder={t.profileFields.about}
               />
 
               <TagSection
-                title="Интересы"
-                tags={[
-                  "Немецкий язык",
-                  "Работа",
-                  "Бизнес",
-                  "Семья",
-                  "Дети",
-                  "Спорт",
-                  "IT",
-                  "Авто",
-                  "Документы",
-                  "Жильё",
-                  "Друзья",
-                  "Культура",
-                ]}
+                title={t.interestsTitle}
+                tags={profileTags[locale].interests}
               />
 
               <TagSection
-                title="Кого ищу"
-                tags={[
-                  "Друзей",
-                  "Бизнес-партнёров",
-                  "Наставника",
-                  "Работу",
-                  "Клиентов",
-                  "Общение",
-                  "Совместный отдых",
-                  "Помощь с документами",
-                ]}
+                title={t.lookingForTitle}
+                tags={profileTags[locale].lookingFor}
               />
 
               <button
                 onClick={() => setScreen("people")}
-                className="w-full rounded-2xl bg-blue-600 py-4 font-black text-white shadow-lg"
+                className="w-full rounded-[22px] bg-[#007AFF] py-4 text-sm font-medium text-white shadow-[0_18px_42px_-18px_rgba(0,122,255,0.8)] transition-all duration-200 hover:translate-y-[-1px]"
               >
-                Сохранить и перейти к людям
+                {t.saveProfile}
               </button>
             </div>
           )}
 
           {screen === "people" && (
             <div className="space-y-4">
-              <BlockTitle
-                title="Люди рядом"
-                text="Добавляйте интересных людей в контакты. В реальном продукте чат откроется после взаимного интереса."
-              />
-              {demoPeople.map((p) => (
+              <BlockTitle title={t.peopleTitle} text={t.peopleText} />
+              {people.map((person) => (
                 <PersonCard
-                  key={p.id}
-                  person={p}
-                  onOpen={() => setSelectedPerson(p)}
-                  onAdd={() => addContact(p.id)}
+                  key={person.id}
+                  person={person}
+                  germanLevelLabel={t.germanLevel}
+                  separator={t.separators.dot}
+                  skipLabel={t.skip}
+                  addLabel={t.add}
+                  onOpen={() => setSelectedPersonId(person.id)}
+                  onAdd={() => addContact(person.id)}
                 />
               ))}
 
-              <div className="rounded-3xl bg-slate-900 p-5 text-white">
-                <h3 className="text-xl font-black">{selectedPerson.name}</h3>
-                <p className="mt-1 text-sm text-slate-300">
-                  {selectedPerson.city}, {selectedPerson.age} · Немецкий {selectedPerson.language}
+              <div className="rounded-[28px] border border-white/10 bg-white/[0.05] p-5 shadow-[0_36px_90px_-50px_rgba(0,0,0,1)] backdrop-blur-[26px]">
+                <h3 className="text-xl font-semibold tracking-[-0.03em] text-white">
+                  {selectedPerson.name}
+                </h3>
+                <p className="mt-1 text-sm text-[#8A94A6]">
+                  {selectedPerson.city}, {selectedPerson.age} {t.separators.dot}{" "}
+                  {t.germanLevel} {selectedPerson.language}
                 </p>
-                <p className="mt-4 text-sm leading-6">{selectedPerson.about}</p>
+                <p className="mt-4 text-sm leading-7 text-[#C7D1E0]">
+                  {selectedPerson.about}
+                </p>
                 <div className="mt-4 flex flex-wrap gap-2">
-                  {selectedPerson.lookingFor.map((t) => (
-                    <span key={t} className="rounded-full bg-blue-500 px-3 py-1 text-xs font-bold">
-                      {t}
+                  {selectedPerson.lookingFor.map((tag) => (
+                    <span
+                      key={tag}
+                      className="rounded-full border border-white/8 bg-[#007AFF]/15 px-3 py-1 text-xs font-medium text-[#8EC5FF]"
+                    >
+                      {tag}
                     </span>
                   ))}
                 </div>
                 <button
                   onClick={() => addContact(selectedPerson.id)}
-                  className="mt-5 w-full rounded-2xl bg-white py-3 font-bold text-slate-900"
+                  className="mt-5 flex w-full items-center justify-center gap-2 rounded-[22px] bg-[#007AFF] py-3 text-sm font-medium text-white shadow-[0_20px_46px_-18px_rgba(0,122,255,0.85)]"
                 >
-                  + Добавить в контакты
+                  <Plus className="h-4 w-4" />
+                  {t.addToContacts}
                 </button>
               </div>
             </div>
@@ -341,15 +347,19 @@ export default function Home() {
 
           {screen === "weekly" && (
             <div className="space-y-4">
-              <BlockTitle
-                title="Ваша подборка недели"
-                text="NeuStart подобрал 5 человек по тегам, интересам и городу."
-              />
-              {demoPeople.map((p) => (
-                <div key={p.id} className="rounded-3xl bg-white p-4 shadow-sm ring-1 ring-slate-100">
-                  <PersonMini person={p} onClick={() => setSelectedPerson(p)} />
-                  <p className="mt-3 rounded-2xl bg-blue-50 p-3 text-sm font-semibold text-blue-700">
-                    Причина: {p.reason}
+              <BlockTitle title={t.weeklyScreenTitle} text={t.weeklyScreenText} />
+              {people.map((person) => (
+                <div
+                  key={person.id}
+                  className="rounded-[28px] border border-white/10 bg-white/[0.05] p-4 shadow-[0_34px_90px_-54px_rgba(0,0,0,1)] backdrop-blur-[26px]"
+                >
+                  <WeeklyPickCard
+                    person={person}
+                    buttonLabel={t.weeklyConnect}
+                    onClick={() => setSelectedPersonId(person.id)}
+                  />
+                  <p className="mt-3 rounded-[20px] border border-[#007AFF]/16 bg-[#007AFF]/10 p-3 text-sm font-medium text-[#8EC5FF]">
+                    {t.reasonLabel}: {person.reason}
                   </p>
                 </div>
               ))}
@@ -358,36 +368,54 @@ export default function Home() {
 
           {screen === "contacts" && (
             <div className="space-y-4">
-              <BlockTitle title="Мои контакты" text="Люди, которых вы добавили в визитницу." />
+              <BlockTitle title={t.contactsTitle} text={t.contactsText} />
               {contacts.length === 0 ? (
                 <EmptyState
-                  title="Контактов пока нет"
-                  text="Перейдите в раздел Люди и добавьте первых участников."
-                  button="Найти людей"
+                  title={t.contactsEmptyTitle}
+                  text={t.contactsEmptyText}
+                  button={t.findPeople}
                   onClick={() => setScreen("people")}
                 />
               ) : (
-                demoPeople
-                  .filter((p) => contacts.includes(p.id))
-                  .map((p) => <PersonMini key={p.id} person={p} onClick={() => setSelectedPerson(p)} />)
+                people
+                  .filter((person) => contacts.includes(person.id))
+                  .map((person) => (
+                    <WeeklyPickCard
+                      key={person.id}
+                      person={person}
+                      buttonLabel={t.weeklyConnect}
+                      onClick={() => setSelectedPersonId(person.id)}
+                    />
+                  ))
               )}
             </div>
           )}
 
           {screen === "events" && (
             <div className="space-y-4">
-              <BlockTitle
-                title="События"
-                text="Встречи, вебинары и локальные мероприятия для поздних переселенцев."
-              />
-              {events.map((e) => (
-                <div key={e.title} className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
-                  <p className="text-sm font-bold text-blue-600">{e.date} · {e.city}</p>
-                  <h3 className="mt-2 text-xl font-black">{e.title}</h3>
-                  <p className="mt-2 text-sm leading-6 text-slate-600">{e.description}</p>
-                  <p className="mt-3 text-xs font-bold text-slate-400">Организатор: {e.org}</p>
-                  <button className="mt-4 rounded-2xl bg-blue-600 px-4 py-3 text-sm font-bold text-white">
-                    Участвовать
+              <BlockTitle title={t.eventsTitle} text={t.eventsText} />
+              {events.map((event) => (
+                <div
+                  key={event.title}
+                  className="rounded-[28px] border border-white/10 bg-white/[0.05] p-5 shadow-[0_34px_90px_-54px_rgba(0,0,0,1)] backdrop-blur-[26px]"
+                >
+                  <div className="flex items-center gap-2 text-sm font-medium text-[#8EC5FF]">
+                    <CalendarDays className="h-4 w-4" />
+                    <span>
+                      {event.date} {t.separators.dot} {event.city}
+                    </span>
+                  </div>
+                  <h3 className="mt-3 text-2xl font-semibold tracking-[-0.04em] text-white">
+                    {event.title}
+                  </h3>
+                  <p className="mt-3 text-sm leading-7 text-[#C7D1E0]">
+                    {event.description}
+                  </p>
+                  <p className="mt-4 text-xs font-medium uppercase tracking-[0.24em] text-[#627089]">
+                    {t.organizer}: {event.org}
+                  </p>
+                  <button className="mt-5 rounded-full bg-[#007AFF] px-4 py-2.5 text-xs font-medium text-white shadow-[0_18px_42px_-18px_rgba(0,122,255,0.85)]">
+                    {t.join}
                   </button>
                 </div>
               ))}
@@ -396,25 +424,30 @@ export default function Home() {
 
           {screen === "partners" && (
             <div className="space-y-4">
-              <BlockTitle
-                title="Партнёры"
-                text="Будущая монетизация: партнёрские сервисы помогают участникам, а фонды получают 40% от вознаграждения."
-              />
-              {partners.map((p) => (
-                <div key={p.title} className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
-                  <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
-                    партнёр NeuStart
+              <BlockTitle title={t.partnersTitle} text={t.partnersText} />
+              {partners.map((partner) => (
+                <div
+                  key={partner.title}
+                  className="rounded-[28px] border border-white/10 bg-white/[0.05] p-5 shadow-[0_34px_90px_-54px_rgba(0,0,0,1)] backdrop-blur-[26px]"
+                >
+                  <span className="rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 text-xs font-medium text-[#AAB7CA]">
+                    {t.partnerBadge}
                   </span>
-                  <h3 className="mt-3 text-xl font-black">{p.title}</h3>
-                  <p className="mt-1 text-sm font-semibold text-blue-600">{p.category}</p>
-                  <p className="mt-2 text-sm leading-6 text-slate-600">{p.description}</p>
+                  <h3 className="mt-3 text-2xl font-semibold tracking-[-0.04em] text-white">
+                    {partner.title}
+                  </h3>
+                  <p className="mt-1 text-sm font-medium text-[#8EC5FF]">
+                    {partner.category}
+                  </p>
+                  <p className="mt-3 text-sm leading-7 text-[#C7D1E0]">
+                    {partner.description}
+                  </p>
                   <button
-                    onClick={() =>
-                      alert("Заявка отправлена. В реальном продукте партнёр получит лид, а фонд — реферальное вознаграждение.")
-                    }
-                    className="mt-4 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-bold text-white"
+                    onClick={() => alert(t.partnerAlert)}
+                    className="mt-5 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-4 py-2.5 text-xs font-medium text-white backdrop-blur-xl transition-all duration-200 hover:border-white/16 hover:bg-white/[0.1]"
                   >
-                    Получить консультацию
+                    {t.partnerButton}
+                    <ArrowUpRight className="h-4 w-4" />
                   </button>
                 </div>
               ))}
@@ -423,37 +456,48 @@ export default function Home() {
 
           {screen === "admin" && (
             <div className="space-y-4">
-              <BlockTitle
-                title="Demo Admin"
-                text="Визуальная демонстрация будущей панели собственника и фондов."
-              />
+              <BlockTitle title={t.adminTitle} text={t.adminText} />
               <div className="grid grid-cols-2 gap-3">
-                <Stat value="3 000" label="участников Riwvel" />
-                <Stat value="612" label="активных профилей" />
-                <Stat value="84" label="новых за неделю" />
-                <Stat value="27" label="партнёрских лидов" />
-                <Stat value="€1 080" label="потенц. вознаграждение" />
-                <Stat value="40%" label="доля фонда" />
+                {t.adminStats.map((stat) => (
+                  <Stat key={stat.label} value={stat.value} label={stat.label} />
+                ))}
               </div>
-              <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
-                <h3 className="text-xl font-black">Еженедельная подборка</h3>
-                <p className="mt-2 text-sm text-slate-600">Статус: готова к запуску</p>
+              <div className="rounded-[28px] border border-white/10 bg-white/[0.05] p-5 shadow-[0_34px_90px_-54px_rgba(0,0,0,1)] backdrop-blur-[26px]">
+                <h3 className="text-xl font-semibold tracking-[-0.03em] text-white">
+                  {t.adminWeeklyTitle}
+                </h3>
+                <p className="mt-3 text-sm text-[#C7D1E0]">
+                  {t.adminWeeklyText}
+                </p>
               </div>
-              <div className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
-                <h3 className="text-xl font-black">Сообщества</h3>
-                <p className="mt-3 text-sm">Riwvel · NRW Sprachclub · Familiengruppe Düsseldorf</p>
+              <div className="rounded-[28px] border border-white/10 bg-white/[0.05] p-5 shadow-[0_34px_90px_-54px_rgba(0,0,0,1)] backdrop-blur-[26px]">
+                <h3 className="text-xl font-semibold tracking-[-0.03em] text-white">
+                  {t.adminCommunitiesTitle}
+                </h3>
+                <p className="mt-3 text-sm text-[#C7D1E0]">{t.adminCommunitiesText}</p>
               </div>
             </div>
           )}
         </section>
 
-        <nav className="fixed bottom-0 left-1/2 z-30 grid w-full max-w-md -translate-x-1/2 grid-cols-6 border-t border-slate-200 bg-white px-2 py-2">
-          <NavButton label="Главная" icon="🏠" active={screen === "home"} onClick={() => setScreen("home")} />
-          <NavButton label="Анкета" icon="👤" active={screen === "profile"} onClick={() => setScreen("profile")} />
-          <NavButton label="Люди" icon="🤝" active={screen === "people"} onClick={() => setScreen("people")} />
-          <NavButton label="Неделя" icon="✨" active={screen === "weekly"} onClick={() => setScreen("weekly")} />
-          <NavButton label="Контакты" icon="💬" active={screen === "contacts"} onClick={() => setScreen("contacts")} />
-          <NavButton label="Ещё" icon="☰" active={screen === "events" || screen === "partners"} onClick={() => setScreen("events")} />
+        <nav className="fixed bottom-4 left-1/2 z-30 w-[calc(100%-1.5rem)] max-w-[calc(28rem-1.5rem)] -translate-x-1/2 rounded-[28px] border border-white/10 bg-[rgba(10,16,30,0.72)] px-2 py-2 shadow-[0_30px_90px_-42px_rgba(0,0,0,1)] backdrop-blur-[30px]">
+          <div className="grid grid-cols-6 gap-1">
+            {navItems.map((item) => (
+              <NavButton
+                key={item.labelKey}
+                label={t.nav[item.labelKey]}
+                icon={item.icon}
+                active={
+                  item.screen === "more"
+                    ? screen === "events" || screen === "partners"
+                    : screen === item.screen
+                }
+                onClick={() =>
+                  setScreen(item.screen === "more" ? "events" : item.screen)
+                }
+              />
+            ))}
+          </div>
         </nav>
       </div>
     </main>
@@ -462,9 +506,11 @@ export default function Home() {
 
 function Stat({ value, label }: { value: string; label: string }) {
   return (
-    <div className="rounded-3xl bg-white p-4 shadow-sm ring-1 ring-slate-100">
-      <p className="text-xl font-black text-blue-600">{value}</p>
-      <p className="mt-1 text-xs font-semibold text-slate-500">{label}</p>
+    <div className="rounded-[26px] border border-white/10 bg-white/[0.06] p-4 shadow-[0_28px_70px_-52px_rgba(0,0,0,1)] backdrop-blur-[24px]">
+      <p className="text-[1.65rem] font-semibold tracking-[-0.05em] text-white">
+        {value}
+      </p>
+      <p className="mt-2 text-xs font-medium leading-5 text-[#8A94A6]">{label}</p>
     </div>
   );
 }
@@ -472,8 +518,10 @@ function Stat({ value, label }: { value: string; label: string }) {
 function BlockTitle({ title, text }: { title: string; text: string }) {
   return (
     <div>
-      <h2 className="text-2xl font-black tracking-tight">{title}</h2>
-      <p className="mt-1 text-sm leading-6 text-slate-500">{text}</p>
+      <h2 className="text-[2rem] font-semibold tracking-[-0.05em] text-white">
+        {title}
+      </h2>
+      <p className="mt-2 text-sm leading-7 text-[#8A94A6]">{text}</p>
     </div>
   );
 }
@@ -481,24 +529,30 @@ function BlockTitle({ title, text }: { title: string; text: string }) {
 function FormInput({ label, placeholder }: { label: string; placeholder: string }) {
   return (
     <label className="block">
-      <span className="mb-2 block text-sm font-bold">{label}</span>
+      <span className="mb-2 block text-sm font-medium text-white">{label}</span>
       <input
-        className="w-full rounded-2xl border border-slate-200 bg-white p-4 text-sm outline-none focus:border-blue-500"
+        className="w-full rounded-[24px] border border-white/10 bg-white/[0.05] p-4 text-sm text-white outline-none backdrop-blur-[24px] placeholder:text-[#6F7B90] focus:border-[#007AFF] focus:bg-white/[0.08]"
         placeholder={placeholder}
       />
     </label>
   );
 }
 
-function TagSection({ title, tags }: { title: string; tags: string[] }) {
+function TagSection({
+  title,
+  tags,
+}: {
+  title: string;
+  tags: readonly string[];
+}) {
   return (
-    <div className="rounded-3xl bg-slate-50 p-4">
-      <h3 className="mb-3 font-black">{title}</h3>
+    <div className="rounded-[28px] border border-white/10 bg-white/[0.05] p-4 shadow-[0_28px_70px_-52px_rgba(0,0,0,1)] backdrop-blur-[24px]">
+      <h3 className="mb-3 text-sm font-medium text-white">{title}</h3>
       <div className="flex flex-wrap gap-2">
         {tags.map((tag) => (
           <button
             key={tag}
-            className="rounded-full bg-white px-3 py-2 text-xs font-bold text-slate-700 ring-1 ring-slate-200"
+            className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-2 text-xs font-medium text-[#C7D1E0] transition-all duration-200 hover:border-[#007AFF]/40 hover:text-white"
           >
             {tag}
           </button>
@@ -508,55 +562,235 @@ function TagSection({ title, tags }: { title: string; tags: string[] }) {
   );
 }
 
-function PersonMini({ person, onClick }: { person: (typeof demoPeople)[0]; onClick: () => void }) {
+function WeeklyPickCard({
+  person,
+  buttonLabel,
+  onClick,
+}: {
+  person: Person;
+  buttonLabel: string;
+  onClick: () => void;
+}) {
   return (
-    <button onClick={onClick} className="flex w-full items-center gap-3 rounded-3xl bg-white p-3 text-left shadow-sm ring-1 ring-slate-100">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={person.photo} alt={person.name} className="h-14 w-14 rounded-2xl object-cover" />
-      <div>
-        <h3 className="font-black">{person.name}</h3>
-        <p className="text-sm text-slate-500">{person.city} · {person.profession}</p>
+    <button
+      onClick={onClick}
+      className="w-full rounded-[28px] border border-white/10 bg-white/[0.05] p-4 text-left shadow-[0_30px_70px_-52px_rgba(0,0,0,1)] backdrop-blur-[24px] transition-all duration-300 hover:border-[#007AFF]/28 hover:bg-white/[0.07] hover:shadow-[0_36px_90px_-46px_rgba(0,122,255,0.25)]"
+    >
+      <div className="flex items-start gap-4">
+        <AvatarBadge name={person.name} className="h-16 w-16 rounded-full" />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h3 className="font-medium text-white">{person.name}</h3>
+              <p className="text-sm text-[#8A94A6]">{person.city}</p>
+            </div>
+            <span className="rounded-full border border-[#007AFF]/24 bg-[#007AFF]/12 px-2.5 py-1 text-[11px] font-medium text-[#8EC5FF]">
+              {person.language}
+            </span>
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {person.interests.slice(0, 3).map((tag) => (
+              <span
+                key={tag}
+                className="rounded-full border border-white/8 bg-white/[0.04] px-2.5 py-1 text-[11px] font-medium text-[#AEB9CA]"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+          <div className="mt-4">
+            <span className="inline-flex items-center gap-2 rounded-full bg-[#007AFF] px-4 py-2 text-xs font-medium text-white shadow-[0_18px_40px_-18px_rgba(0,122,255,0.8)]">
+              {buttonLabel}
+              <ChevronRight className="h-4 w-4" />
+            </span>
+          </div>
+        </div>
       </div>
     </button>
   );
 }
 
+function FeaturedEventCard({
+  event,
+  badge,
+  joinLabel,
+}: {
+  event: { title: string; city: string; date: string; org: string; description: string };
+  badge: string;
+  joinLabel: string;
+}) {
+  return (
+    <div className="overflow-hidden rounded-[32px] border border-white/10 bg-[linear-gradient(145deg,rgba(8,13,28,0.96),rgba(12,26,58,0.88)_55%,rgba(0,122,255,0.56))] p-5 shadow-[0_38px_100px_-44px_rgba(0,122,255,0.45)]">
+      <div className="flex items-start justify-between gap-3">
+        <span className="rounded-full border border-white/10 bg-white/[0.08] px-3 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-[#D8E6FF]">
+          {badge}
+        </span>
+        <span className="rounded-full border border-white/10 bg-white/[0.08] px-3 py-1 text-xs font-medium text-[#D8E6FF]">
+          {event.org}
+        </span>
+      </div>
+      <h3 className="mt-4 text-[2rem] font-semibold leading-tight tracking-[-0.05em] text-white">
+        {event.title}
+      </h3>
+      <p className="mt-3 text-sm leading-7 text-[#D8E6FF]">{event.description}</p>
+      <div className="mt-5 flex items-center justify-between gap-3 rounded-[24px] border border-white/10 bg-white/[0.09] px-4 py-3 backdrop-blur-[24px]">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/[0.08]">
+            <CalendarDays className="h-5 w-5 text-[#8EC5FF]" />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-white">{event.date}</p>
+            <p className="text-xs text-[#C5D6F4]">{event.city}</p>
+          </div>
+        </div>
+        <button className="rounded-full bg-white px-4 py-2 text-xs font-medium text-[#06101E]">
+          {joinLabel}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ServiceCard({
+  title,
+  subtitle,
+  icon: Icon,
+}: {
+  title: string;
+  subtitle: string;
+  icon: IconType;
+}) {
+  return (
+    <div className="rounded-[26px] border border-white/10 bg-white/[0.05] p-4 shadow-[0_30px_70px_-54px_rgba(0,0,0,1)] backdrop-blur-[24px]">
+      <div className="flex h-11 w-11 items-center justify-center rounded-[18px] border border-[#007AFF]/18 bg-[#007AFF]/10 shadow-[0_0_24px_rgba(0,122,255,0.16)]">
+        <Icon className="h-5 w-5 text-[#8EC5FF]" />
+      </div>
+      <h3 className="mt-4 text-sm font-medium text-white">{title}</h3>
+      <p className="mt-2 text-xs leading-6 text-[#8A94A6]">{subtitle}</p>
+    </div>
+  );
+}
+
+function AIAssistantCard({
+  title,
+  text,
+  bullets,
+  buttonLabel,
+}: {
+  title: string;
+  text: string;
+  bullets: readonly string[];
+  buttonLabel: string;
+}) {
+  return (
+    <div className="rounded-[32px] border border-white/10 bg-[linear-gradient(145deg,rgba(255,255,255,0.08),rgba(255,255,255,0.03))] p-5 shadow-[0_34px_90px_-52px_rgba(0,0,0,1)] backdrop-blur-[28px]">
+      <div className="flex items-start gap-4">
+        <div className="flex h-14 w-14 items-center justify-center rounded-[22px] bg-[#007AFF] shadow-[0_0_34px_rgba(0,122,255,0.45)]">
+          <Bot className="h-7 w-7 text-white" />
+        </div>
+        <div className="flex-1">
+          <h3 className="text-2xl font-semibold tracking-[-0.04em] text-white">
+            {title}
+          </h3>
+          <p className="mt-2 text-sm leading-7 text-[#C7D1E0]">{text}</p>
+          <div className="mt-4 space-y-2">
+            {bullets.map((bullet) => (
+              <div key={bullet} className="flex items-center gap-2 text-sm text-[#D3DCE8]">
+                <span className="h-2.5 w-2.5 rounded-full bg-[#007AFF] shadow-[0_0_14px_rgba(0,122,255,0.9)]" />
+                <span>{bullet}</span>
+              </div>
+            ))}
+          </div>
+          <button className="mt-5 inline-flex items-center gap-2 rounded-full bg-white/[0.08] px-4 py-2.5 text-xs font-medium text-white backdrop-blur-xl transition-all duration-200 hover:bg-white/[0.12]">
+            {buttonLabel}
+            <ArrowUpRight className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function PersonCard({
   person,
+  germanLevelLabel,
+  separator,
+  skipLabel,
+  addLabel,
   onOpen,
   onAdd,
 }: {
-  person: (typeof demoPeople)[0];
+  person: Person;
+  germanLevelLabel: string;
+  separator: string;
+  skipLabel: string;
+  addLabel: string;
   onOpen: () => void;
   onAdd: () => void;
 }) {
   return (
-    <div className="rounded-[2rem] bg-white p-4 shadow-sm ring-1 ring-slate-100">
+    <div className="rounded-[32px] border border-white/10 bg-white/[0.05] p-4 shadow-[0_34px_90px_-54px_rgba(0,0,0,1)] backdrop-blur-[28px]">
       <button onClick={onOpen} className="flex w-full gap-4 text-left">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={person.photo} alt={person.name} className="h-20 w-20 rounded-3xl object-cover" />
+        <AvatarBadge name={person.name} className="h-20 w-20 rounded-[24px]" />
         <div className="flex-1">
-          <h3 className="text-lg font-black">{person.name}</h3>
-          <p className="text-sm text-slate-500">
-            {person.city}, {person.age} · {person.profession}
+          <h3 className="text-lg font-medium text-white">{person.name}</h3>
+          <p className="text-sm text-[#8A94A6]">
+            {person.city}, {person.age} {separator} {person.profession}
           </p>
-          <p className="mt-2 text-xs font-bold text-blue-600">Немецкий: {person.language}</p>
+          <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-[#007AFF]/18 bg-[#007AFF]/10 px-3 py-1 text-xs font-medium text-[#8EC5FF]">
+            <Languages className="h-3.5 w-3.5" />
+            {germanLevelLabel}: {person.language}
+          </div>
         </div>
       </button>
-      <p className="mt-3 line-clamp-2 text-sm leading-6 text-slate-600">{person.about}</p>
+      <p className="mt-4 line-clamp-2 text-sm leading-7 text-[#C7D1E0]">
+        {person.about}
+      </p>
       <div className="mt-3 flex flex-wrap gap-2">
         {person.interests.slice(0, 3).map((tag) => (
-          <span key={tag} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-600">
+          <span
+            key={tag}
+            className="rounded-full border border-white/8 bg-white/[0.04] px-3 py-1 text-xs font-medium text-[#AEB9CA]"
+          >
             {tag}
           </span>
         ))}
       </div>
       <div className="mt-4 grid grid-cols-2 gap-3">
-        <button className="rounded-2xl bg-slate-100 py-3 text-sm font-bold text-slate-500">Пропустить</button>
-        <button onClick={onAdd} className="rounded-2xl bg-blue-600 py-3 text-sm font-bold text-white">Добавить</button>
+        <button className="flex items-center justify-center gap-2 rounded-[20px] border border-white/10 bg-white/[0.04] py-3 text-sm font-medium text-[#8A94A6] transition-all duration-200 hover:text-white">
+          <X className="h-4 w-4" />
+          {skipLabel}
+        </button>
+        <button
+          onClick={onAdd}
+          className="flex items-center justify-center gap-2 rounded-[20px] bg-[#007AFF] py-3 text-sm font-medium text-white shadow-[0_18px_42px_-18px_rgba(0,122,255,0.85)]"
+        >
+          <Plus className="h-4 w-4" />
+          {addLabel}
+        </button>
       </div>
     </div>
   );
+}
+
+function AvatarBadge({ name, className }: { name: string; className: string }) {
+  return (
+    <div
+      className={`${className} flex shrink-0 items-center justify-center border border-white/10 bg-[linear-gradient(145deg,rgba(255,255,255,0.11),rgba(255,255,255,0.03))] font-semibold text-[#DDE7F7] shadow-[0_24px_60px_-40px_rgba(0,122,255,0.5)] backdrop-blur-[20px]`}
+      aria-label={name}
+    >
+      <span className="text-lg tracking-[-0.04em]">{getInitials(name)}</span>
+    </div>
+  );
+}
+
+function getInitials(name: string) {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
 }
 
 function EmptyState({
@@ -571,11 +805,18 @@ function EmptyState({
   onClick: () => void;
 }) {
   return (
-    <div className="rounded-[2rem] bg-slate-50 p-8 text-center">
-      <div className="text-5xl">🗂️</div>
-      <h3 className="mt-4 text-xl font-black">{title}</h3>
-      <p className="mt-2 text-sm leading-6 text-slate-500">{text}</p>
-      <button onClick={onClick} className="mt-5 rounded-2xl bg-blue-600 px-5 py-3 text-sm font-bold text-white">
+    <div className="rounded-[32px] border border-white/10 bg-white/[0.05] p-8 text-center shadow-[0_34px_90px_-54px_rgba(0,0,0,1)] backdrop-blur-[28px]">
+      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[22px] border border-white/10 bg-white/[0.05]">
+        <Inbox className="h-7 w-7 text-[#8EC5FF]" />
+      </div>
+      <h3 className="mt-4 text-2xl font-semibold tracking-[-0.04em] text-white">
+        {title}
+      </h3>
+      <p className="mt-2 text-sm leading-7 text-[#8A94A6]">{text}</p>
+      <button
+        onClick={onClick}
+        className="mt-5 rounded-full bg-[#007AFF] px-5 py-3 text-sm font-medium text-white shadow-[0_18px_42px_-18px_rgba(0,122,255,0.85)]"
+      >
         {button}
       </button>
     </div>
@@ -584,19 +825,38 @@ function EmptyState({
 
 function NavButton({
   label,
-  icon,
+  icon: Icon,
   active,
   onClick,
 }: {
   label: string;
-  icon: string;
+  icon: IconType;
   active: boolean;
   onClick: () => void;
 }) {
   return (
-    <button onClick={onClick} className={`rounded-2xl px-1 py-2 text-center text-[10px] font-bold ${active ? "bg-blue-50 text-blue-700" : "text-slate-400"}`}>
-      <div className="text-lg">{icon}</div>
-      {label}
+    <button
+      onClick={onClick}
+      className={`group flex min-w-0 flex-col items-center gap-1 rounded-[20px] px-1 py-2 transition-all duration-300 ${
+        active ? "bg-white/[0.08]" : "hover:bg-white/[0.04]"
+      }`}
+    >
+      <div
+        className={`flex h-10 w-10 items-center justify-center rounded-2xl border transition-all duration-300 ${
+          active
+            ? "border-[#007AFF]/25 bg-[#007AFF]/14 text-[#007AFF] shadow-[0_0_24px_rgba(0,122,255,0.28)]"
+            : "border-transparent bg-transparent text-[#8A94A6] group-hover:text-white"
+        }`}
+      >
+        <Icon className="h-5 w-5" />
+      </div>
+      <span
+        className={`truncate text-[10px] font-medium ${
+          active ? "text-white" : "text-[#8A94A6]"
+        }`}
+      >
+        {label}
+      </span>
     </button>
   );
 }
