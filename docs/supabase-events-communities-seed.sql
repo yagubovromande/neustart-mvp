@@ -1,0 +1,191 @@
+insert into public.communities (
+  id,
+  name,
+  slug,
+  description,
+  city,
+  language,
+  category,
+  cover_url
+)
+values
+  (
+    '7d1b2d7a-7f78-4f95-91d6-70db15c0e101',
+    'Riwvel Dusseldorf',
+    'riwvel-dusseldorf',
+    'Local onboarding circle for newcomers in Dusseldorf with soft integration, practical orientation and trusted human support.',
+    'Dusseldorf',
+    'RU/DE',
+    'Onboarding',
+    null
+  ),
+  (
+    '7d1b2d7a-7f78-4f95-91d6-70db15c0e102',
+    'Riwvel Koln',
+    'riwvel-koln',
+    'Community for first local contacts, calm meetups and useful recommendations in Cologne.',
+    'Koln',
+    'RU/DE',
+    'Community',
+    null
+  ),
+  (
+    '7d1b2d7a-7f78-4f95-91d6-70db15c0e103',
+    'Riwvel Essen',
+    'riwvel-essen',
+    'Supportive peer group in Essen for families, language practice and first reliable connections.',
+    'Essen',
+    'RU/DE',
+    'Family',
+    null
+  ),
+  (
+    '7d1b2d7a-7f78-4f95-91d6-70db15c0e104',
+    'Riwvel Dortmund',
+    'riwvel-dortmund',
+    'Local network in Dortmund focused on belonging, orientation and a steady start in the city.',
+    'Dortmund',
+    'RU/DE',
+    'Integration',
+    null
+  )
+on conflict (id) do update
+set
+  name = excluded.name,
+  slug = excluded.slug,
+  description = excluded.description,
+  city = excluded.city,
+  language = excluded.language,
+  category = excluded.category,
+  cover_url = excluded.cover_url,
+  updated_at = timezone('utc', now());
+
+insert into public.events (
+  id,
+  community_id,
+  title,
+  description,
+  city,
+  address,
+  starts_at,
+  ends_at,
+  organizer,
+  capacity,
+  category,
+  language,
+  visibility,
+  cover_url
+)
+values
+  (
+    '9a29cb13-b1b8-4f9f-9446-3d3dc3e0e201',
+    '7d1b2d7a-7f78-4f95-91d6-70db15c0e101',
+    'Coffee Meetup',
+    'A relaxed first meetup for new members with coffee, introductions and practical local tips.',
+    'Dusseldorf',
+    'Riwvel Hub, Bilker Allee 14',
+    timezone('utc', now()) + interval '2 days',
+    timezone('utc', now()) + interval '2 days 2 hours',
+    'Riwvel Dusseldorf',
+    24,
+    'Networking',
+    'RU/DE',
+    'public',
+    null
+  ),
+  (
+    '9a29cb13-b1b8-4f9f-9446-3d3dc3e0e202',
+    '7d1b2d7a-7f78-4f95-91d6-70db15c0e101',
+    'Integrationskurs',
+    'Orientation session about course formats, registration steps and how to choose the right integration path.',
+    'Dusseldorf',
+    'Volkshochschule, Bertha-von-Suttner-Platz 1',
+    timezone('utc', now()) + interval '4 days',
+    timezone('utc', now()) + interval '4 days 90 minutes',
+    'Riwvel Dusseldorf',
+    18,
+    'Education',
+    'DE/RU',
+    'public',
+    null
+  ),
+  (
+    '9a29cb13-b1b8-4f9f-9446-3d3dc3e0e203',
+    '7d1b2d7a-7f78-4f95-91d6-70db15c0e102',
+    'Jobcenter Workshop',
+    'Step-by-step workshop on appointments, documents and how to prepare for the first Jobcenter conversation.',
+    'Koln',
+    'Community Loft, Hohenzollernring 22',
+    timezone('utc', now()) + interval '6 days',
+    timezone('utc', now()) + interval '6 days 2 hours',
+    'Riwvel Koln',
+    22,
+    'Practical',
+    'RU/DE',
+    'public',
+    null
+  ),
+  (
+    '9a29cb13-b1b8-4f9f-9446-3d3dc3e0e204',
+    '7d1b2d7a-7f78-4f95-91d6-70db15c0e103',
+    'Familienfest',
+    'A family-friendly afternoon with children activities, local parents and warm first connections.',
+    'Essen',
+    'Stadtgarten Pavilion, Huyssenallee 53',
+    timezone('utc', now()) + interval '8 days',
+    timezone('utc', now()) + interval '8 days 3 hours',
+    'Riwvel Essen',
+    40,
+    'Family',
+    'RU/DE',
+    'public',
+    null
+  ),
+  (
+    '9a29cb13-b1b8-4f9f-9446-3d3dc3e0e205',
+    '7d1b2d7a-7f78-4f95-91d6-70db15c0e104',
+    'Sportabend',
+    'Casual sports evening for newcomers who want light movement, conversation and local friendships.',
+    'Dortmund',
+    'Sporthalle Mitte, Bornstrasse 80',
+    timezone('utc', now()) + interval '10 days',
+    timezone('utc', now()) + interval '10 days 2 hours',
+    'Riwvel Dortmund',
+    30,
+    'Wellbeing',
+    'RU/DE',
+    'public',
+    null
+  ),
+  (
+    '9a29cb13-b1b8-4f9f-9446-3d3dc3e0e206',
+    '7d1b2d7a-7f78-4f95-91d6-70db15c0e102',
+    'Sprachcafe',
+    'Guided speaking practice with small groups, easy prompts and a calm pace for daily confidence.',
+    'Koln',
+    'Cafe Forum, Friesenplatz 9',
+    timezone('utc', now()) + interval '12 days',
+    timezone('utc', now()) + interval '12 days 2 hours',
+    'Riwvel Koln',
+    20,
+    'Language',
+    'DE/RU',
+    'public',
+    null
+  )
+on conflict (id) do update
+set
+  community_id = excluded.community_id,
+  title = excluded.title,
+  description = excluded.description,
+  city = excluded.city,
+  address = excluded.address,
+  starts_at = excluded.starts_at,
+  ends_at = excluded.ends_at,
+  organizer = excluded.organizer,
+  capacity = excluded.capacity,
+  category = excluded.category,
+  language = excluded.language,
+  visibility = excluded.visibility,
+  cover_url = excluded.cover_url,
+  updated_at = timezone('utc', now());
