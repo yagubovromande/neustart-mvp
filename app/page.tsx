@@ -67,6 +67,7 @@ type ProfileRow = {
   user_id: string;
   name: string;
   city: string;
+  role?: string | null;
   languages: string[] | null;
   interests: string[] | null;
   looking_for: string[] | null;
@@ -124,6 +125,17 @@ type ChatThreadSummary = {
   unreadCount: number;
   hasUnread: boolean;
 };
+
+type FounderMetricSnapshot = {
+  totalProfiles: number | null;
+  totalCommunities: number | null;
+  totalEvents: number | null;
+  totalConnectionRequests: number | null;
+  totalChatMessages: number | null;
+};
+
+const profileRoleOptions = ["user", "manager", "admin", "founder"] as const;
+type ProfileRole = (typeof profileRoleOptions)[number];
 
 type CommunityRow = {
   id: string;
@@ -321,6 +333,14 @@ function getRouteState(pathname: string | null): {
     return { area: "app", screen: "contacts" };
   }
 
+  if (pathname === "/founder") {
+    return { area: "founder", screen: "home" };
+  }
+
+  if (pathname === "/admin") {
+    return { area: "admin", screen: "home" };
+  }
+
   if (pathname === "/requests") {
     return { area: "app", screen: "requests" };
   }
@@ -407,16 +427,16 @@ const founderInsightNotes = {
   ],
   ru: [
     {
-      title: "Р”РѕРІРµСЂРёРµ СЃРѕРѕР±С‰РµСЃС‚РІР°",
-      text: "NeuStart СЃС‚Р°РЅРѕРІРёС‚СЃСЏ СЃРёР»СЊРЅРµРµ, РєРѕРіРґР° Р·РЅР°РєРѕРјСЃС‚РІР°, СЃРѕР±С‹С‚РёСЏ Рё РїРѕРґРґРµСЂР¶РєР° РѕС‰СѓС‰Р°СЋС‚СЃСЏ РєР°Рє РµРґРёРЅС‹Р№ СЃРѕС†РёР°Р»СЊРЅС‹Р№ РїСѓС‚СЊ.",
+      title: "Доверие сообщества",
+      text: "NeuStart становится сильнее, когда знакомства, события и поддержка ощущаются как единый социальный путь.",
     },
     {
-      title: "РЎРёР»Р° РїРёР»РѕС‚Р°",
-      text: "РџР°СЂС‚РЅРµСЂСЃРєРёРµ СЃРѕРѕР±С‰РµСЃС‚РІР° РјРѕРіСѓС‚ РІ РѕРґРЅРѕРј РїРёР»РѕС‚Рµ РѕРґРЅРѕРІСЂРµРјРµРЅРЅРѕ РїСЂРѕРІРµСЂРёС‚СЊ Рё С†РµРЅРЅРѕСЃС‚СЊ РґР»СЏ Р»СЋРґРµР№, Рё СЂР°Р±РѕС‡СѓСЋ РѕРїРµСЂР°С†РёРѕРЅРЅСѓСЋ РјРµС…Р°РЅРёРєСѓ.",
+      title: "Сила пилота",
+      text: "Партнерские сообщества могут в одном пилоте одновременно проверить и ценность для людей, и рабочую операционную механику.",
     },
     {
-      title: "РџСѓС‚СЊ РјРѕРЅРµС‚РёР·Р°С†РёРё",
-      text: "РЎРЅР°С‡Р°Р»Р° СЂР°Р±РѕС‚Р°СЋС‚ РїР°СЂС‚РЅРµСЂСЃРєРёРµ СЃРµСЂРІРёСЃС‹, Р° Р·Р°С‚РµРј РёСЃС‚РѕСЂРёСЋ РІС‹СЂСѓС‡РєРё СЂР°СЃС€РёСЂСЏСЋС‚ РїСЂРµРјРёР°Р»СЊРЅС‹Рµ РёРЅСЃС‚СЂСѓРјРµРЅС‚С‹ РґР»СЏ СЃРѕРѕР±С‰РµСЃС‚РІ.",
+      title: "Путь монетизации",
+      text: "Сначала работают партнерские сервисы, а затем историю выручки расширяют премиальные инструменты для сообществ.",
     },
   ],
 } as const satisfies Record<Locale, Array<{ title: string; text: string }>>;
@@ -434,13 +454,13 @@ const healthPanelCopy = {
   },
   ru: {
     items: [
-      { label: "РЎРѕСЃС‚РѕСЏРЅРёРµ СЃРѕРѕР±С‰РµСЃС‚РІР°", value: 82 },
-      { label: "Р—Р°РїРѕР»РЅСЏРµРјРѕСЃС‚СЊ СЃРѕР±С‹С‚РёР№", value: 74 },
-      { label: "РЎРєРѕСЂРѕСЃС‚СЊ РѕС‚РІРµС‚РѕРІ", value: 68 },
-      { label: "РџРѕРєСЂС‹С‚РёРµ РјРѕРґРµСЂР°С†РёРё", value: 91 },
+      { label: "Состояние сообщества", value: 82 },
+      { label: "Заполняемость событий", value: 74 },
+      { label: "Скорость ответов", value: 68 },
+      { label: "Покрытие модерации", value: 91 },
     ],
-    pendingReplies: "РћР¶РёРґР°СЋС‚ РѕС‚РІРµС‚Р° СѓС‡Р°СЃС‚РЅРёРєРѕРІ",
-    escalatedOffers: "Р­СЃРєР°Р»РёСЂРѕРІР°РЅРЅС‹Рµ РѕС„С„РµСЂС‹",
+    pendingReplies: "Ожидают ответа участников",
+    escalatedOffers: "Эскалированные офферы",
   },
 } as const satisfies Record<
   Locale,
@@ -505,56 +525,56 @@ const socialCopy = {
     devDebug: "Entwicklerhinweis",
   },
   ru: {
-    authTitle: "РђРєРєР°СѓРЅС‚ РґР»СЏ РїР»Р°С‚С„РѕСЂРјС‹",
+    authTitle: "Аккаунт для платформы",
     authText:
-      "Р—Р°СЂРµРіРёСЃС‚СЂРёСЂСѓР№С‚РµСЃСЊ РёР»Рё РІРѕР№РґРёС‚Рµ, С‡С‚РѕР±С‹ СЃРѕС…СЂР°РЅРёС‚СЊ РїСЂРѕС„РёР»СЊ Рё СЃС‚Р°С‚СЊ РІРёРґРёРјС‹Рј РІРЅСѓС‚СЂРё СЃРѕРѕР±С‰РµСЃС‚РІР°.",
-    authStandaloneTitle: "Р’РѕР№С‚Рё РёР»Рё Р·Р°СЂРµРіРёСЃС‚СЂРёСЂРѕРІР°С‚СЊСЃСЏ",
-    login: "Р’РѕР№С‚Рё",
-    signup: "Р РµРіРёСЃС‚СЂР°С†РёСЏ",
-    email: "Р­Р». РїРѕС‡С‚Р°",
-    password: "РџР°СЂРѕР»СЊ",
+      "Зарегистрируйтесь или войдите, чтобы сохранить профиль и стать видимым внутри сообщества.",
+    authStandaloneTitle: "Войти или зарегистрироваться",
+    login: "Войти",
+    signup: "Регистрация",
+    email: "Эл. почта",
+    password: "Пароль",
     emailPlaceholder: "you@example.com",
-    passwordPlaceholder: "РњРёРЅРёРјСѓРј 6 СЃРёРјРІРѕР»РѕРІ",
-    logout: "Р’С‹Р№С‚Рё",
-    loggedInAs: "Р’С‹ РІРѕС€Р»Рё РєР°Рє",
-    saveAndPublish: "РЎРѕС…СЂР°РЅРёС‚СЊ Рё РѕРїСѓР±Р»РёРєРѕРІР°С‚СЊ РїСЂРѕС„РёР»СЊ",
-    loadingProfiles: "РџСЂРѕС„РёР»Рё Р·Р°РіСЂСѓР¶Р°СЋС‚СЃСЏ...",
-    noProfilesTitle: "РџРѕРєР° РЅРµС‚ РїСЂРѕС„РёР»РµР№",
+    passwordPlaceholder: "Минимум 6 символов",
+    logout: "Выйти",
+    loggedInAs: "Вы вошли как",
+    saveAndPublish: "Сохранить и опубликовать профиль",
+    loadingProfiles: "Профили загружаются...",
+    noProfilesTitle: "Пока нет профилей",
     noProfilesText:
-      "РљР°Рє С‚РѕР»СЊРєРѕ РїРµСЂРІС‹Рµ СѓС‡Р°СЃС‚РЅРёРєРё СЃРѕС…СЂР°РЅСЏС‚ РїСЂРѕС„РёР»СЊ, РѕРЅРё РїРѕСЏРІСЏС‚СЃСЏ Р·РґРµСЃСЊ РІ СЂР°Р·РґРµР»Рµ СЃРѕРѕР±С‰РµСЃС‚РІР°.",
+      "Как только первые участники сохранят профиль, они появятся здесь в разделе сообщества.",
     emptyPeopleText:
-      "РџРѕРєР° Р·РґРµСЃСЊ РјР°Р»Рѕ Р»СЋРґРµР№. РџСЂРёРіР»Р°СЃРёС‚Рµ РїРµСЂРІС‹С… СѓС‡Р°СЃС‚РЅРёРєРѕРІ вЂ” Рё NeuStart РЅР°С‡РЅС‘С‚ РїРѕРґР±РёСЂР°С‚СЊ РїРѕР»РµР·РЅС‹Рµ Р·РЅР°РєРѕРјСЃС‚РІР°.",
-    fallbackTitle: "Р”РµРјРѕ-СЂРµР¶РёРј",
+      "Пока здесь мало людей. Пригласите первых участников — и NeuStart начнёт подбирать полезные знакомства.",
+    fallbackTitle: "Демо-режим",
     fallbackText:
-      "Supabase РїРѕРєР° РЅРµ РїРѕРґРєР»СЋС‡С‘РЅ. Р”Рѕ РЅР°СЃС‚СЂРѕР№РєРё РїСЂРѕРґРѕР»Р¶Р°СЋС‚ РїРѕРєР°Р·С‹РІР°С‚СЊСЃСЏ СЃСѓС‰РµСЃС‚РІСѓСЋС‰РёРµ РґРµРјРѕ-РїСЂРѕС„РёР»Рё.",
-    profileSaved: "РџСЂРѕС„РёР»СЊ СЃРѕС…СЂР°РЅС‘РЅ. РўРµРїРµСЂСЊ РІС‹ РІРёРґРЅС‹ РІ СЃРѕРѕР±С‰РµСЃС‚РІРµ.",
+      "Supabase пока не подключён. До настройки продолжают показываться существующие демо-профили.",
+    profileSaved: "Профиль сохранён. Теперь вы видны в сообществе.",
     signupSuccess:
-      "РђРєРєР°СѓРЅС‚ СЃРѕР·РґР°РЅ. Р•СЃР»Рё РІ Supabase РІРєР»СЋС‡РµРЅРѕ РїРѕРґС‚РІРµСЂР¶РґРµРЅРёРµ РїРѕС‡С‚С‹, РїРѕРґС‚РІРµСЂРґРёС‚Рµ Р°РґСЂРµСЃ РёР· РїРёСЃСЊРјР°.",
-    loginSuccess: "Р’С…РѕРґ РІС‹РїРѕР»РЅРµРЅ.",
-    logoutSuccess: "Р’С‹ РІС‹С€Р»Рё РёР· Р°РєРєР°СѓРЅС‚Р°.",
-    signupFailed: "Supabase РЅРµ СЃРѕР·РґР°Р» РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ. РџСЂРѕРІРµСЂСЊС‚Рµ РЅР°СЃС‚СЂРѕР№РєРё Auth Рё РєР»СЋС‡Рё РїСЂРѕРµРєС‚Р°.",
-    signupCreatedLoginNow: "РђРєРєР°СѓРЅС‚ СЃРѕР·РґР°РЅ. РўРµРїРµСЂСЊ РІРѕР№РґРёС‚Рµ СЃ СЌС‚РѕР№ РїРѕС‡С‚РѕР№ Рё РїР°СЂРѕР»РµРј.",
-    profileLoadError: "РЎРµР№С‡Р°СЃ РЅРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ РїСЂРѕС„РёР»Рё.",
-    profileOwnLoadError: "РЎРµР№С‡Р°СЃ РЅРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ РІР°С€ РїСЂРѕС„РёР»СЊ.",
-    authRequired: "РЎРЅР°С‡Р°Р»Р° РІРѕР№РґРёС‚Рµ РёР»Рё Р·Р°СЂРµРіРёСЃС‚СЂРёСЂСѓР№С‚РµСЃСЊ.",
+      "Аккаунт создан. Если в Supabase включено подтверждение почты, подтвердите адрес из письма.",
+    loginSuccess: "Вход выполнен.",
+    logoutSuccess: "Вы вышли из аккаунта.",
+    signupFailed: "Supabase не создал пользователя. Проверьте настройки Auth и ключи проекта.",
+    signupCreatedLoginNow: "Аккаунт создан. Теперь войдите с этой почтой и паролем.",
+    profileLoadError: "Сейчас не удалось загрузить профили.",
+    profileOwnLoadError: "Сейчас не удалось загрузить ваш профиль.",
+    authRequired: "Сначала войдите или зарегистрируйтесь.",
     profileHelp:
-      "РСЃРїРѕР»СЊР·СѓР№С‚Рµ Р·Р°РїСЏС‚С‹Рµ, С‡С‚РѕР±С‹ СѓРєР°Р·Р°С‚СЊ РЅРµСЃРєРѕР»СЊРєРѕ СЏР·С‹РєРѕРІ, РёРЅС‚РµСЂРµСЃРѕРІ РёР»Рё Р·Р°РїСЂРѕСЃРѕРІ.",
-    languagesPlaceholder: "РќР°РїСЂРёРјРµСЂ: СЂСѓСЃСЃРєРёР№, РЅРµРјРµС†РєРёР№",
-    interestsPlaceholder: "РќР°РїСЂРёРјРµСЂ: СЃРµРјСЊСЏ, СЂР°Р±РѕС‚Р°, РґСЂСѓР·СЊСЏ",
-    lookingForPlaceholder: "РќР°РїСЂРёРјРµСЂ: СЃРѕРѕР±С‰РµСЃС‚РІРѕ, РЅР°СЃС‚Р°РІРЅРёРє, СЃРѕР±С‹С‚РёСЏ",
-    photoUrlLabel: "РЎСЃС‹Р»РєР° РЅР° С„РѕС‚Рѕ",
+      "Заполните анкету, чтобы другие участники увидели вас полностью.",
+    languagesPlaceholder: "Например: русский, немецкий",
+    interestsPlaceholder: "Например: семья, работа, друзья",
+    lookingForPlaceholder: "Например: сообщество, наставник, события",
+    photoUrlLabel: "Ссылка на фото",
     photoUrlPlaceholder: "https://...",
-    communityMember: "РЈС‡Р°СЃС‚РЅРёРє СЃРѕРѕР±С‰РµСЃС‚РІР°",
-    freshStart: "Р”РѕР±Р°РІР»СЏРµС‚ РІ СЃРѕРѕР±С‰РµСЃС‚РІРѕ РЅРѕРІС‹Р№ СЌС‚Р°Рї Р¶РёР·РЅРё Рё СЃРІРµР¶РёР№ РІР·РіР»СЏРґ.",
-    activeProfile: "РђРєС‚РёРІРЅС‹Р№ РїСЂРѕС„РёР»СЊ",
-    profileNeeded: "РЎРЅР°С‡Р°Р»Р° Р·Р°РїРѕР»РЅРёС‚Рµ РїСЂРѕС„РёР»СЊ, С‡С‚РѕР±С‹ РѕС‚РєСЂС‹С‚СЊ СЃРІРѕР№ СЂР°Р·РґРµР» РїРѕР»РЅРѕСЃС‚СЊСЋ.",
-    profileStandaloneTitle: "РЎРѕР·РґР°РЅРёРµ РїСЂРѕС„РёР»СЏ",
+    communityMember: "Участник сообщества",
+    freshStart: "Добавляет в сообщество новый этап жизни и свежий взгляд.",
+    activeProfile: "Активный профиль",
+    profileNeeded: "Сначала заполните профиль, чтобы открыть свой раздел полностью.",
+    profileStandaloneTitle: "Создание профиля",
     profileStandaloneText:
-      "РЎРµР№С‡Р°СЃ С‚РѕР»СЊРєРѕ РїСЂРѕС„РёР»СЊ. РџРѕСЃР»Рµ СЃРѕС…СЂР°РЅРµРЅРёСЏ РІС‹ СЃСЂР°Р·Сѓ РїРµСЂРµР№РґС‘С‚Рµ РІ СЃРѕРѕР±С‰РµСЃС‚РІРѕ Рё СѓРІРёРґРёС‚Рµ СЂРµР°Р»СЊРЅС‹С… Р»СЋРґРµР№.",
-    appStandaloneTitle: "РџР»Р°С‚С„РѕСЂРјР° NeuStart",
+      "Сейчас только профиль. После сохранения вы сразу перейдёте в сообщество и увидите реальных людей.",
+    appStandaloneTitle: "Платформа NeuStart",
     appStandaloneText:
-      "Р’Р°С€ СЂР°Р·РґРµР» СѓР¶Рµ Р°РєС‚РёРІРµРЅ. Р—РґРµСЃСЊ РїРѕСЏРІР»СЏСЋС‚СЃСЏ СЂРµР°Р»СЊРЅС‹Рµ Р»СЋРґРё РёР· СЃРѕРѕР±С‰РµСЃС‚РІР°.",
-    devDebug: "РћС‚Р»Р°РґРєР°",
+      "Ваш раздел уже активен. Здесь появляются реальные люди из сообщества.",
+    devDebug: "Отладка",
   },
 } as const satisfies Record<
   Locale,
@@ -616,6 +636,8 @@ export default function HomePage() {
   const isCommunitiesRoute = clientPathname === "/communities";
   const isEventsRoute = clientPathname === "/events";
   const isContactsRoute = clientPathname === "/contacts";
+  const isFounderRoute = clientPathname === "/founder";
+  const isAdminRoute = clientPathname === "/admin";
   const isRequestsRoute = clientPathname === "/requests";
   const chatRouteUserId =
     clientPathname.startsWith("/chat/") ? decodeURIComponent(clientPathname.split("/")[2] ?? "") : null;
@@ -695,6 +717,19 @@ export default function HomePage() {
   const [eventRsvpRows, setEventRsvpRows] = useState<EventRsvpRow[]>([]);
   const [eventRsvpsLoading, setEventRsvpsLoading] = useState(false);
   const [eventActionLoadingId, setEventActionLoadingId] = useState<string | null>(null);
+  const [founderMetricsLoading, setFounderMetricsLoading] = useState(false);
+  const [founderMetricsMessage, setFounderMetricsMessage] = useState<string | null>(null);
+  const [founderRoleActionUserId, setFounderRoleActionUserId] = useState<string | null>(null);
+  const [founderRoleActionRole, setFounderRoleActionRole] = useState<ProfileRole | null>(null);
+  const [founderUsersMessage, setFounderUsersMessage] = useState<string | null>(null);
+  const [founderUsersMessageTone, setFounderUsersMessageTone] = useState<"info" | "warning">("info");
+  const [founderMetricSnapshot, setFounderMetricSnapshot] = useState<FounderMetricSnapshot>({
+    totalProfiles: null,
+    totalCommunities: null,
+    totalEvents: null,
+    totalConnectionRequests: null,
+    totalChatMessages: null,
+  });
 
   const t = translations[locale];
   const social = socialCopy[locale];
@@ -720,6 +755,7 @@ export default function HomePage() {
   const adminMetrics = adminMetricsByLocale[locale];
   const adminOffers = adminOffersByLocale[locale];
   const moderationQueue = moderationQueueByLocale[locale];
+  const hasFounderAccess = currentProfile?.role === "founder";
   const selectedPerson =
     appPeople.find((person) => person.id === selectedPersonId) ?? appPeople[0];
   const incomingRequests = connectionRequests.filter(
@@ -759,23 +795,23 @@ export default function HomePage() {
   const landingPrimaryCtaLabel = authUser
     ? hasCompletedProfile
       ? locale === "ru"
-        ? "РћС‚РєСЂС‹С‚СЊ РїСЂРёР»РѕР¶РµРЅРёРµ"
-        : "App Г¶ffnen"
+        ? "Открыть приложение"
+        : "App öffnen"
       : locale === "ru"
-        ? "Р—Р°РІРµСЂС€РёС‚СЊ РїСЂРѕС„РёР»СЊ"
-        : "Profil vervollstГ¤ndigen"
+        ? "Завершить профиль"
+        : "Profil vervollständigen"
     : undefined;
   const landingSecondaryCtaLabel =
     authUser && hasCompletedProfile
       ? locale === "ru"
-        ? "Р РµРґР°РєС‚РёСЂРѕРІР°С‚СЊ РїСЂРѕС„РёР»СЊ"
+        ? "Редактировать профиль"
         : "Profil bearbeiten"
       : undefined;
 
   const shellSubtitle =
     locale === "ru"
-      ? "РџР›РђРўР¤РћР РњРђ Р”Р›РЇ РќРћР’РћР™ Р–РР—РќР Р’ Р“Р•Р РњРђРќРР"
-      : "PLATTFORM FUR EINEN NEUANFANG IN DEUTSCHLAND";
+      ? "ПЛАТФОРМА ДЛЯ НОВОЙ ЖИЗНИ В ГЕРМАНИИ"
+      : "PLATTFORM FÜR EINEN NEUANFANG IN DEUTSCHLAND";
   function setFriendlyMessage(
     setter: Dispatch<SetStateAction<string | null>>,
     fallbackRu: string,
@@ -878,8 +914,8 @@ export default function HomePage() {
       if (error) {
         setFriendlyMessage(
           setAuthMessage,
-          "РќРµ СѓРґР°Р»РѕСЃСЊ РїСЂРѕРІРµСЂРёС‚СЊ РІС…РѕРґ. РџРѕРїСЂРѕР±СѓР№С‚Рµ РѕС‚РєСЂС‹С‚СЊ СЃС‚СЂР°РЅРёС†Сѓ РµС‰С‘ СЂР°Р·.",
-          "Die Anmeldung konnte nicht geprГјft werden. Bitte Г¶ffne die Seite erneut.",
+          "Не удалось проверить вход. Попробуйте открыть страницу ещё раз.",
+          "Die Anmeldung konnte nicht geprüft werden. Bitte öffne die Seite erneut.",
           error,
         );
         authStateCache.sessionChecked = true;
@@ -956,6 +992,8 @@ export default function HomePage() {
         isCommunitiesRoute ||
         isEventsRoute ||
         isContactsRoute ||
+        isFounderRoute ||
+        isAdminRoute ||
         isRequestsRoute ||
         isChatRoute ||
         isAppRoute
@@ -970,6 +1008,8 @@ export default function HomePage() {
     isChatRoute,
     isCommunitiesRoute,
     isContactsRoute,
+    isFounderRoute,
+    isAdminRoute,
     isEventsRoute,
     isPeopleRoute,
     isProfileRoute,
@@ -1007,6 +1047,14 @@ export default function HomePage() {
     void loadEvents();
     void loadEventRsvps();
   }, [authUser]);
+
+  useEffect(() => {
+    if (!isSupabaseConfigured || authSessionLoading || !authUser || !hasFounderAccess) {
+      return;
+    }
+
+    void loadFounderMetricSnapshot();
+  }, [authSessionLoading, authUser, hasFounderAccess]);
 
   useEffect(() => {
     if (!isSupabaseConfigured || !authUser || !chatRouteUserId) {
@@ -1090,7 +1138,7 @@ export default function HomePage() {
       interests: splitList(profileForm.interests),
       looking_for: splitList(profileForm.lookingFor),
       about: profileForm.about.trim(),
-      photo_url: (photoUrlOverride ?? profileForm.photoUrl).trim() || null,
+        photo_url: (photoUrlOverride ?? profileForm.photoUrl).trim() || null,
     };
   }
 
@@ -1113,8 +1161,8 @@ export default function HomePage() {
       warnInDevelopment("Profiles could not be loaded.", error);
       setFriendlyMessage(
         setProfilesMessage,
-        "РЎРїРёСЃРѕРє Р»СЋРґРµР№ РІСЂРµРјРµРЅРЅРѕ РЅРµРґРѕСЃС‚СѓРїРµРЅ. РџРѕРїСЂРѕР±СѓР№С‚Рµ РµС‰С‘ СЂР°Р· С‡СѓС‚СЊ РїРѕР·Р¶Рµ.",
-        "Die Menschenliste ist gerade nicht verfГјgbar. Bitte versuche es gleich noch einmal.",
+        "Список людей временно недоступен. Попробуйте ещё раз чуть позже.",
+        "Die Menschenliste ist gerade nicht verfügbar. Bitte versuche es gleich noch einmal.",
         error,
       );
       setProfilesLoaded(true);
@@ -1125,6 +1173,134 @@ export default function HomePage() {
     setRemoteProfiles((data ?? []) as ProfileRow[]);
     setProfilesLoaded(true);
     setProfilesLoading(false);
+  }
+
+  async function loadFounderMetricSnapshot() {
+    const supabase = getSupabaseBrowserClient();
+
+    if (!supabase) {
+      return;
+    }
+
+    setFounderMetricsLoading(true);
+    setFounderMetricsMessage(null);
+
+    const countQuery = async (table: string) => {
+      const { count, error } = await supabase.from(table).select("*", { count: "exact", head: true });
+
+      if (error) {
+        throw error;
+      }
+
+      return count ?? 0;
+    };
+
+    try {
+      const [totalProfiles, totalCommunities, totalEvents, totalConnectionRequests, totalChatMessages] =
+        await Promise.all([
+          countQuery("profiles"),
+          countQuery("communities"),
+          countQuery("events"),
+          countQuery("connection_requests"),
+          countQuery("chat_messages"),
+        ]);
+
+      if (!isMountedRef.current) {
+        return;
+      }
+
+      setFounderMetricSnapshot({
+        totalProfiles,
+        totalCommunities,
+        totalEvents,
+        totalConnectionRequests,
+        totalChatMessages,
+      });
+      setFounderMetricsLoading(false);
+    } catch (error) {
+      warnInDevelopment("Founder metrics could not be loaded.", error);
+
+      if (!isMountedRef.current) {
+        return;
+      }
+
+      setFounderMetricSnapshot({
+        totalProfiles: null,
+        totalCommunities: null,
+        totalEvents: null,
+        totalConnectionRequests: null,
+        totalChatMessages: null,
+      });
+      setFounderMetricsMessage(
+        locale === "ru" ? "Данные временно недоступны." : "Daten sind vorübergehend nicht verfügbar.",
+      );
+      setFounderMetricsLoading(false);
+    }
+  }
+
+  async function updateFounderUserRole(targetUserId: string, nextRole: ProfileRole) {
+    const supabase = getSupabaseBrowserClient();
+
+    if (!supabase) {
+      return;
+    }
+
+    setFounderRoleActionUserId(targetUserId);
+    setFounderRoleActionRole(nextRole);
+    setFounderUsersMessage(null);
+    setFounderUsersMessageTone("info");
+
+    const { data, error } = await supabase
+      .from("profiles")
+      .update({ role: nextRole })
+      .eq("user_id", targetUserId)
+      .select("*")
+      .maybeSingle();
+
+    if (error) {
+      warnInDevelopment("Founder user role could not be updated.", error);
+      setFounderUsersMessageTone("warning");
+      setFriendlyMessage(
+        setFounderUsersMessage,
+        "Роль пользователя сейчас не удалось обновить.",
+        "Die Benutzerrolle konnte gerade nicht aktualisiert werden.",
+        error,
+      );
+      setFounderRoleActionUserId(null);
+      setFounderRoleActionRole(null);
+      return;
+    }
+
+    const updatedProfile = data as ProfileRow | null;
+
+    if (!updatedProfile) {
+      setFounderUsersMessageTone("warning");
+      setFounderUsersMessage(
+        locale === "ru"
+          ? "Профиль не найден после обновления роли."
+          : "Das Profil wurde nach der Rollenänderung nicht gefunden.",
+      );
+      setFounderRoleActionUserId(null);
+      setFounderRoleActionRole(null);
+      return;
+    }
+
+    setRemoteProfiles((currentProfiles) =>
+      currentProfiles.map((profile) =>
+        profile.user_id === targetUserId ? { ...profile, role: updatedProfile.role } : profile,
+      ),
+    );
+
+    if (currentProfile?.user_id === targetUserId) {
+      setCurrentProfile((profile) => (profile ? { ...profile, role: updatedProfile.role } : profile));
+    }
+
+    setFounderUsersMessage(
+      locale === "ru" ? "Роль пользователя обновлена." : "Die Benutzerrolle wurde aktualisiert.",
+    );
+    setFounderUsersMessageTone("info");
+    setFounderRoleActionUserId(null);
+    setFounderRoleActionRole(null);
   }
 
   async function loadOwnProfile(userId: string) {
@@ -1145,7 +1321,7 @@ export default function HomePage() {
     if (error) {
       setFriendlyMessage(
         setProfileMessage,
-        "Р’Р°С€ РїСЂРѕС„РёР»СЊ СЃРµР№С‡Р°СЃ РЅРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ.",
+        "Ваш профиль сейчас не удалось загрузить.",
         "Dein Profil konnte gerade nicht geladen werden.",
         error,
       );
@@ -1188,8 +1364,8 @@ export default function HomePage() {
     if (error) {
       setFriendlyMessage(
         setRequestsMessage,
-        "Р—Р°РїСЂРѕСЃС‹ СЃРµР№С‡Р°СЃ РЅРµРґРѕСЃС‚СѓРїРЅС‹. РџРѕРїСЂРѕР±СѓР№С‚Рµ РѕР±РЅРѕРІРёС‚СЊ СЃС‚СЂР°РЅРёС†Сѓ С‡СѓС‚СЊ РїРѕР·Р¶Рµ.",
-        "Anfragen sind gerade nicht verfГјgbar. Bitte versuche es gleich noch einmal.",
+        "Запросы сейчас недоступны. Попробуйте обновить страницу чуть позже.",
+        "Anfragen sind gerade nicht verfügbar. Bitte versuche es gleich noch einmal.",
         error,
       );
       setRequestsLoaded(true);
@@ -1197,7 +1373,7 @@ export default function HomePage() {
       return;
     }
 
-    setConnectionRequests((data as ConnectionRequestRow[]) ?? []);
+      setConnectionRequests((data as ConnectionRequestRow[]) ?? []);
     setRequestsLoaded(true);
     setRequestsLoading(false);
   }
@@ -1221,15 +1397,15 @@ export default function HomePage() {
     if (error) {
       setFriendlyMessage(
         setCommunitiesMessage,
-        "РЎРѕРѕР±С‰РµСЃС‚РІР° СЃРµР№С‡Р°СЃ РЅРµРґРѕСЃС‚СѓРїРЅС‹. РџРѕРїСЂРѕР±СѓР№С‚Рµ РѕС‚РєСЂС‹С‚СЊ СЂР°Р·РґРµР» С‡СѓС‚СЊ РїРѕР·Р¶Рµ.",
-        "Communities sind gerade nicht verfГјgbar. Bitte Г¶ffne den Bereich spГ¤ter erneut.",
+        "Сообщества сейчас недоступны. Попробуйте открыть раздел чуть позже.",
+        "Communities sind gerade nicht verfügbar. Bitte öffne den Bereich später erneut.",
         error,
       );
       setCommunitiesLoading(false);
       return;
     }
 
-    setCommunityRows((data as CommunityRow[]) ?? []);
+      setCommunityRows((data as CommunityRow[]) ?? []);
     setCommunitiesLoading(false);
   }
 
@@ -1254,7 +1430,7 @@ export default function HomePage() {
       return;
     }
 
-    setCommunityMemberRows((data as CommunityMemberRow[]) ?? []);
+      setCommunityMemberRows((data as CommunityMemberRow[]) ?? []);
     setCommunityMembersLoading(false);
   }
 
@@ -1278,15 +1454,15 @@ export default function HomePage() {
     if (error) {
       setFriendlyMessage(
         setEventsMessage,
-        "РЎРїРёСЃРѕРє СЃРѕР±С‹С‚РёР№ СЃРµР№С‡Р°СЃ РЅРµРґРѕСЃС‚СѓРїРµРЅ. РџРѕРїСЂРѕР±СѓР№С‚Рµ РѕС‚РєСЂС‹С‚СЊ СЂР°Р·РґРµР» С‡СѓС‚СЊ РїРѕР·Р¶Рµ.",
-        "Die Eventliste ist gerade nicht verfГјgbar. Bitte Г¶ffne den Bereich spГ¤ter erneut.",
+        "Список событий сейчас недоступен. Попробуйте открыть раздел чуть позже.",
+        "Die Eventliste ist gerade nicht verfügbar. Bitte öffne den Bereich später erneut.",
         error,
       );
       setEventsLoading(false);
       return;
     }
 
-    setEventRows((data as EventRow[]) ?? []);
+      setEventRows((data as EventRow[]) ?? []);
     setEventsLoading(false);
   }
 
@@ -1311,7 +1487,7 @@ export default function HomePage() {
       return;
     }
 
-    setEventRsvpRows((data as EventRsvpRow[]) ?? []);
+      setEventRsvpRows((data as EventRsvpRow[]) ?? []);
     setEventRsvpsLoading(false);
   }
 
@@ -1429,8 +1605,8 @@ export default function HomePage() {
           lastMessage:
             latestMessage?.message ??
             (locale === "ru"
-              ? "Р§Р°С‚ РіРѕС‚РѕРІ Рє РїРµСЂРІРѕРјСѓ СЃРѕРѕР±С‰РµРЅРёСЋ."
-              : "Der Chat ist bereit fГјr die erste Nachricht."),
+              ? "Чат готов к первому сообщению."
+              : "Der Chat ist bereit für die erste Nachricht."),
           lastActivityAt: latestMessage?.created_at ?? acceptedRequest?.created_at ?? new Date(0).toISOString(),
           unreadCount,
           hasUnread: unreadCount > 0,
@@ -1464,15 +1640,15 @@ export default function HomePage() {
     if (error) {
       setFriendlyMessage(
         setChatFeedback,
-        "РџРµСЂРµРїРёСЃРєР° СЃРµР№С‡Р°СЃ РЅРµРґРѕСЃС‚СѓРїРЅР°. РџРѕРїСЂРѕР±СѓР№С‚Рµ РѕС‚РєСЂС‹С‚СЊ С‡Р°С‚ РµС‰С‘ СЂР°Р·.",
-        "Der Chat ist gerade nicht verfГјgbar. Bitte Г¶ffne ihn erneut.",
+        "Переписка сейчас недоступна. Попробуйте открыть чат ещё раз.",
+        "Der Chat ist gerade nicht verfügbar. Bitte öffne ihn erneut.",
         error,
       );
       setChatLoading(false);
       return;
     }
 
-    setChatMessages((data as ChatMessageRow[]) ?? []);
+      setChatMessages((data as ChatMessageRow[]) ?? []);
     setChatLoading(false);
   }
 
@@ -1524,7 +1700,7 @@ export default function HomePage() {
     if (error) {
       setFriendlyMessage(
         setCommunitiesMessage,
-        "РќРµ СѓРґР°Р»РѕСЃСЊ РІСЃС‚СѓРїРёС‚СЊ РІ СЃРѕРѕР±С‰РµСЃС‚РІРѕ. РџРѕРїСЂРѕР±СѓР№С‚Рµ РµС‰С‘ СЂР°Р·.",
+        "Не удалось вступить в сообщество. Попробуйте ещё раз.",
         "Der Beitritt zur Community ist fehlgeschlagen. Bitte versuche es erneut.",
         error,
       );
@@ -1534,7 +1710,7 @@ export default function HomePage() {
 
     await loadCommunityMembers();
     setCommunitiesMessage(
-      locale === "ru" ? "Р’С‹ РїСЂРёСЃРѕРµРґРёРЅРёР»РёСЃСЊ Рє СЃРѕРѕР±С‰РµСЃС‚РІСѓ." : "Du bist der Community beigetreten.",
+      locale === "ru" ? "Вы присоединились к сообществу." : "Du bist der Community beigetreten.",
     );
     setCommunityActionLoadingId(null);
   }
@@ -1559,7 +1735,7 @@ export default function HomePage() {
     if (error) {
       setFriendlyMessage(
         setCommunitiesMessage,
-        "РќРµ СѓРґР°Р»РѕСЃСЊ РІС‹Р№С‚Рё РёР· СЃРѕРѕР±С‰РµСЃС‚РІР°. РџРѕРїСЂРѕР±СѓР№С‚Рµ РµС‰С‘ СЂР°Р·.",
+        "Не удалось выйти из сообщества. Попробуйте ещё раз.",
         "Das Verlassen der Community ist fehlgeschlagen. Bitte versuche es erneut.",
         error,
       );
@@ -1569,7 +1745,7 @@ export default function HomePage() {
 
     await loadCommunityMembers();
     setCommunitiesMessage(
-      locale === "ru" ? "Р’С‹ РІС‹С€Р»Рё РёР· СЃРѕРѕР±С‰РµСЃС‚РІР°." : "Du hast die Community verlassen.",
+      locale === "ru" ? "Вы вышли из сообщества." : "Du hast die Community verlassen.",
     );
     setCommunityActionLoadingId(null);
   }
@@ -1584,7 +1760,7 @@ export default function HomePage() {
     const { error } = await supabase.from("notifications").insert({
       user_id: authUser.id,
       type: "rsvp_confirmed",
-      title: locale === "ru" ? "Р’С‹ Р·Р°РїРёСЃР°Р»РёСЃСЊ РЅР° СЃРѕР±С‹С‚РёРµ" : "Du bist fГјr ein Event angemeldet",
+      title: locale === "ru" ? "Вы записались на событие" : "Du bist für ein Event angemeldet",
       body: eventRow.title,
       related_user_id: null,
       related_chat_user_id: null,
@@ -1620,7 +1796,7 @@ export default function HomePage() {
     if (error) {
       setFriendlyMessage(
         setEventsMessage,
-        "РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РїРёСЃР°С‚СЊСЃСЏ РЅР° СЃРѕР±С‹С‚РёРµ. РџРѕРїСЂРѕР±СѓР№С‚Рµ РµС‰С‘ СЂР°Р·.",
+        "Не удалось записаться на событие. Попробуйте ещё раз.",
         "Die Event-Anmeldung ist fehlgeschlagen. Bitte versuche es erneut.",
         error,
       );
@@ -1631,7 +1807,7 @@ export default function HomePage() {
     await saveRsvpNotification(eventRow);
     await loadEventRsvps();
     await loadNotifications(authUser.id);
-    setEventsMessage(locale === "ru" ? "Р’С‹ Р·Р°РїРёСЃР°Р»РёСЃСЊ РЅР° СЃРѕР±С‹С‚РёРµ." : "Du bist fГјr das Event angemeldet.");
+    setEventsMessage(locale === "ru" ? "Вы записались на событие." : "Du bist für das Event angemeldet.");
     setEventActionLoadingId(null);
   }
 
@@ -1655,7 +1831,7 @@ export default function HomePage() {
     if (error) {
       setFriendlyMessage(
         setEventsMessage,
-        "РќРµ СѓРґР°Р»РѕСЃСЊ РѕС‚РјРµРЅРёС‚СЊ Р·Р°РїРёСЃСЊ. РџРѕРїСЂРѕР±СѓР№С‚Рµ РµС‰С‘ СЂР°Р·.",
+        "Не удалось отменить запись. Попробуйте ещё раз.",
         "Die Anmeldung konnte nicht storniert werden. Bitte versuche es erneut.",
         error,
       );
@@ -1664,7 +1840,7 @@ export default function HomePage() {
     }
 
     await loadEventRsvps();
-    setEventsMessage(locale === "ru" ? "Р—Р°РїРёСЃСЊ РЅР° СЃРѕР±С‹С‚РёРµ РѕС‚РјРµРЅРµРЅР°." : "Die Event-Anmeldung wurde storniert.");
+    setEventsMessage(locale === "ru" ? "Запись на событие отменена." : "Die Event-Anmeldung wurde storniert.");
     setEventActionLoadingId(null);
   }
 
@@ -1719,18 +1895,18 @@ export default function HomePage() {
       setRequestsMessage(
         existingState === "accepted"
           ? locale === "ru"
-            ? "Р—РЅР°РєРѕРјСЃС‚РІРѕ СѓР¶Рµ РїРѕРґС‚РІРµСЂР¶РґРµРЅРѕ."
-            : "Die Verbindung ist bereits bestГ¤tigt."
+            ? "Знакомство уже подтверждено."
+            : "Die Verbindung ist bereits bestätigt."
           : existingState === "pending_received"
             ? locale === "ru"
-              ? "РЈ РІР°СЃ СѓР¶Рµ РµСЃС‚СЊ РІС…РѕРґСЏС‰РёР№ Р·Р°РїСЂРѕСЃ."
+              ? "У вас уже есть входящий запрос."
               : "Es gibt bereits eine eingehende Anfrage."
             : existingState === "declined"
               ? locale === "ru"
-                ? "Р—Р°РїСЂРѕСЃ СѓР¶Рµ Р±С‹Р» РѕС‚РєР»РѕРЅС‘РЅ."
+                ? "Запрос уже был отклонён."
                 : "Die Anfrage wurde bereits abgelehnt."
               : locale === "ru"
-                ? "Р—Р°РїСЂРѕСЃ СѓР¶Рµ СЃСѓС‰РµСЃС‚РІСѓРµС‚."
+                ? "Запрос уже существует."
                 : "Die Anfrage existiert bereits.",
       );
       return;
@@ -1751,10 +1927,10 @@ export default function HomePage() {
       setRequestsMessage(
         error.message.includes("connection_requests_from_user_id_to_user_id_key")
           ? locale === "ru"
-            ? "Р—Р°РїСЂРѕСЃ СѓР¶Рµ СЃСѓС‰РµСЃС‚РІСѓРµС‚."
+            ? "Запрос уже существует."
             : "Die Anfrage existiert bereits."
           : locale === "ru"
-            ? "РќРµ СѓРґР°Р»РѕСЃСЊ РѕС‚РїСЂР°РІРёС‚СЊ Р·Р°РїСЂРѕСЃ. РџРѕРїСЂРѕР±СѓР№С‚Рµ РµС‰С‘ СЂР°Р·."
+            ? "Не удалось отправить запрос. Попробуйте ещё раз."
             : "Die Anfrage konnte nicht gesendet werden. Bitte versuche es erneut.",
       );
       setRequestSending(false);
@@ -1763,7 +1939,7 @@ export default function HomePage() {
 
     setRequestSending(false);
     setRequestModalMode("success");
-    setRequestsMessage(locale === "ru" ? "Р—Р°РїСЂРѕСЃ РѕС‚РїСЂР°РІР»РµРЅ." : "Anfrage gesendet.");
+    setRequestsMessage(locale === "ru" ? "Запрос отправлен." : "Anfrage gesendet.");
     await loadConnectionRequests(authUser.id);
   }
 
@@ -1789,7 +1965,7 @@ export default function HomePage() {
       console.error(error);
       setRequestsMessage(
         locale === "ru"
-          ? "РќРµ СѓРґР°Р»РѕСЃСЊ РѕР±РЅРѕРІРёС‚СЊ Р·Р°РїСЂРѕСЃ."
+          ? "Не удалось обновить запрос."
           : "Die Anfrage konnte nicht aktualisiert werden.",
       );
       return;
@@ -1798,10 +1974,10 @@ export default function HomePage() {
     setRequestsMessage(
       status === "accepted"
         ? locale === "ru"
-          ? "Р—Р°РїСЂРѕСЃ РїСЂРёРЅСЏС‚."
+          ? "Запрос принят."
           : "Anfrage angenommen."
         : locale === "ru"
-          ? "Р—Р°РїСЂРѕСЃ РѕС‚РєР»РѕРЅС‘РЅ."
+          ? "Запрос отклонён."
           : "Anfrage abgelehnt.",
     );
     await loadConnectionRequests(authUser.id);
@@ -1828,7 +2004,7 @@ export default function HomePage() {
       console.error(error);
       setChatFeedback(
         locale === "ru"
-          ? "РќРµ СѓРґР°Р»РѕСЃСЊ РѕС‚РїСЂР°РІРёС‚СЊ СЃРѕРѕР±С‰РµРЅРёРµ."
+          ? "Не удалось отправить сообщение."
           : "Die Nachricht konnte nicht gesendet werden.",
       );
       return;
@@ -1837,7 +2013,7 @@ export default function HomePage() {
     const { error: notificationError } = await supabase.from("notifications").insert({
       user_id: chatPartner.userId,
       type: "chat_message",
-      title: locale === "ru" ? "РќРѕРІРѕРµ СЃРѕРѕР±С‰РµРЅРёРµ" : "Neue Nachricht",
+      title: locale === "ru" ? "Новое сообщение" : "Neue Nachricht",
       body: messageToSend.slice(0, 180),
       related_user_id: authUser.id,
       related_chat_user_id: authUser.id,
@@ -1849,7 +2025,7 @@ export default function HomePage() {
     }
 
     setChatMessage("");
-    setChatFeedback(locale === "ru" ? "РЎРѕРѕР±С‰РµРЅРёРµ РѕС‚РїСЂР°РІР»РµРЅРѕ." : "Nachricht gesendet.");
+    setChatFeedback(locale === "ru" ? "Сообщение отправлено." : "Nachricht gesendet.");
     await loadChatMessagesFor(authUser.id, chatPartner.userId);
     await loadChatThreads(authUser.id);
   }
@@ -1860,7 +2036,7 @@ export default function HomePage() {
     if (!supabase) {
       setAuthMessage(
         locale === "ru"
-          ? "РџРѕРґРєР»СЋС‡РµРЅРёРµ РґР°РЅРЅС‹С… РµС‰С‘ РЅРµ РіРѕС‚РѕРІРѕ."
+          ? "Подключение данных ещё не готово."
           : "Die Datenverbindung ist noch nicht bereit.",
       );
       return;
@@ -1884,11 +2060,11 @@ export default function HomePage() {
       setAuthMessage(
         authMode === "signup"
           ? locale === "ru"
-            ? "РќРµ СѓРґР°Р»РѕСЃСЊ СЃРѕР·РґР°С‚СЊ Р°РєРєР°СѓРЅС‚. РџСЂРѕРІРµСЂСЊС‚Рµ РїРѕС‡С‚Сѓ Рё РїР°СЂРѕР»СЊ."
-            : "Das Konto konnte nicht erstellt werden. Bitte prГјfe E-Mail und Passwort."
+            ? "Не удалось создать аккаунт. Проверьте почту и пароль."
+            : "Das Konto konnte nicht erstellt werden. Bitte prüfe E-Mail und Passwort."
           : locale === "ru"
-            ? "РќРµ СѓРґР°Р»РѕСЃСЊ РІРѕР№С‚Рё. РџСЂРѕРІРµСЂСЊС‚Рµ РїРѕС‡С‚Сѓ Рё РїР°СЂРѕР»СЊ."
-            : "Die Anmeldung ist fehlgeschlagen. Bitte prГјfe E-Mail und Passwort.",
+            ? "Не удалось войти. Проверьте почту и пароль."
+            : "Die Anmeldung ist fehlgeschlagen. Bitte prüfe E-Mail und Passwort.",
       );
       setAuthLoading(false);
       return;
@@ -1902,13 +2078,13 @@ export default function HomePage() {
         setAuthMode("login");
         setAuthMessage(
           locale === "ru"
-            ? "РђРєРєР°СѓРЅС‚ СЃРѕР·РґР°РЅ. РўРµРїРµСЂСЊ РІРѕР№РґРёС‚Рµ СЃ СЌС‚РѕР№ РїРѕС‡С‚РѕР№ Рё РїР°СЂРѕР»РµРј."
+            ? "Аккаунт создан. Теперь войдите с этой почтой и паролем."
             : "Das Konto wurde erstellt. Bitte melde dich jetzt mit dieser E-Mail und deinem Passwort an.",
         );
       } else {
         setAuthMessage(
           locale === "ru"
-            ? "РђРєРєР°СѓРЅС‚ РµС‰С‘ РЅРµ СѓРґР°Р»РѕСЃСЊ Р°РєС‚РёРІРёСЂРѕРІР°С‚СЊ. РџРѕРїСЂРѕР±СѓР№С‚Рµ РІРѕР№С‚Рё РµС‰С‘ СЂР°Р·."
+            ? "Аккаунт ещё не удалось активировать. Попробуйте войти ещё раз."
             : "Das Konto konnte noch nicht aktiviert werden. Bitte versuche die Anmeldung noch einmal.",
         );
       }
@@ -1919,10 +2095,10 @@ export default function HomePage() {
     setAuthMessage(
       authMode === "signup"
         ? locale === "ru"
-          ? "РђРєРєР°СѓРЅС‚ СЃРѕР·РґР°РЅ."
+          ? "Аккаунт создан."
           : "Konto erstellt."
         : locale === "ru"
-          ? "Р’С…РѕРґ РІС‹РїРѕР»РЅРµРЅ."
+          ? "Вход выполнен."
           : "Anmeldung erfolgreich.",
     );
     setAuthLoading(false);
@@ -1954,7 +2130,7 @@ export default function HomePage() {
 
     if (error) {
       console.error(error);
-      setAuthMessage(locale === "ru" ? "РќРµ СѓРґР°Р»РѕСЃСЊ РІС‹Р№С‚Рё РёР· Р°РєРєР°СѓРЅС‚Р°." : "Die Abmeldung ist fehlgeschlagen.");
+      setAuthMessage(locale === "ru" ? "Не удалось выйти из аккаунта." : "Die Abmeldung ist fehlgeschlagen.");
       setAuthLoading(false);
       return;
     }
@@ -1998,14 +2174,14 @@ export default function HomePage() {
       console.error(error);
       setProfileMessage(
         locale === "ru"
-          ? "РќРµ СѓРґР°Р»РѕСЃСЊ СЃРѕС…СЂР°РЅРёС‚СЊ РїСЂРѕС„РёР»СЊ. РџСЂРѕРІРµСЂСЊС‚Рµ РїРѕР»СЏ Рё РїРѕРїСЂРѕР±СѓР№С‚Рµ СЃРЅРѕРІР°."
-          : "Das Profil konnte nicht gespeichert werden. Bitte prГјfe die Felder und versuche es erneut.",
+          ? "Не удалось сохранить профиль. Проверьте поля и попробуйте снова."
+          : "Das Profil konnte nicht gespeichert werden. Bitte prüfe die Felder und versuche es erneut.",
       );
       setProfileSaving(false);
       return;
     }
 
-    setProfileMessage(locale === "ru" ? "РџСЂРѕС„РёР»СЊ СЃРѕС…СЂР°РЅС‘РЅ." : "Profil gespeichert.");
+    setProfileMessage(locale === "ru" ? "Профиль сохранён." : "Profil gespeichert.");
     setProfileSaving(false);
     await loadProfiles();
     await loadOwnProfile(authUser.id);
@@ -2029,7 +2205,7 @@ export default function HomePage() {
       setProfilePhotoPreview(previousPhotoUrl);
       setProfileMessage(
         locale === "ru"
-          ? "Р¤РѕС‚Рѕ РјРѕР¶РЅРѕ СЃРѕС…СЂР°РЅРёС‚СЊ РїРѕСЃР»Рµ РІС…РѕРґР° РІ Р°РєРєР°СѓРЅС‚."
+          ? "Фото можно сохранить после входа в аккаунт."
           : "Das Foto kann nach der Anmeldung gespeichert werden.",
       );
       return;
@@ -2052,7 +2228,7 @@ export default function HomePage() {
         setProfilePhotoPreview(previousPhotoUrl);
         setProfileMessage(
           locale === "ru"
-            ? "Р¤РѕС‚Рѕ РїРѕРєР° РЅРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ РІ С…СЂР°РЅРёР»РёС‰Рµ, РЅРѕ РїСЂРѕС„РёР»СЊ РІСЃС‘ СЂР°РІРЅРѕ РјРѕР¶РЅРѕ СЃРѕС…СЂР°РЅРёС‚СЊ."
+            ? "Фото пока не удалось загрузить в хранилище, но профиль всё равно можно сохранить."
             : "Das Foto konnte gerade nicht in den Speicher geladen werden, aber du kannst dein Profil trotzdem speichern.",
         );
         return;
@@ -2079,22 +2255,22 @@ export default function HomePage() {
             warnInDevelopment("Avatar URL could not be saved to the profile.", profileError);
             setProfileMessage(
               locale === "ru"
-                ? "Р¤РѕС‚Рѕ Р·Р°РіСЂСѓР¶РµРЅРѕ, РЅРѕ РїРѕРєР° РЅРµ РїСЂРёРІСЏР·Р°Р»РѕСЃСЊ Рє Р°РЅРєРµС‚Рµ. РќР°Р¶РјРёС‚Рµ СЃРѕС…СЂР°РЅРёС‚СЊ РїСЂРѕС„РёР»СЊ."
-                : "Das Foto wurde hochgeladen, aber noch nicht mit dem Profil verknГјpft. Bitte speichere dein Profil.",
+                ? "Фото загружено, но пока не привязалось к анкете. Нажмите сохранить профиль."
+                : "Das Foto wurde hochgeladen, aber noch nicht mit dem Profil verknüpft. Bitte speichere dein Profil.",
             );
             return;
           }
 
           await loadProfiles();
           await loadOwnProfile(authUser.id);
-          setProfileMessage(locale === "ru" ? "Р¤РѕС‚Рѕ СЃРѕС…СЂР°РЅРµРЅРѕ." : "Foto gespeichert.");
+          setProfileMessage(locale === "ru" ? "Фото сохранено." : "Foto gespeichert.");
           return;
         }
       }
 
       setProfileMessage(
         locale === "ru"
-          ? "Р¤РѕС‚Рѕ Р·Р°РіСЂСѓР¶РµРЅРѕ. РўРµРїРµСЂСЊ СЃРѕС…СЂР°РЅРёС‚Рµ Р°РЅРєРµС‚Сѓ, С‡С‚РѕР±С‹ РѕРЅРѕ РѕСЃС‚Р°Р»РѕСЃСЊ РІ РїСЂРѕС„РёР»Рµ."
+          ? "Фото загружено. Теперь сохраните анкету, чтобы оно осталось в профиле."
           : "Das Foto wurde hochgeladen. Speichere jetzt dein Profil, damit es erhalten bleibt.",
       );
     } catch (error) {
@@ -2103,7 +2279,7 @@ export default function HomePage() {
       setProfilePhotoPreview(previousPhotoUrl);
       setProfileMessage(
         locale === "ru"
-          ? "РҐСЂР°РЅРёР»РёС‰Рµ С„РѕС‚Рѕ РїРѕРєР° РЅРµ РЅР°СЃС‚СЂРѕРµРЅРѕ. РџСЂРѕС„РёР»СЊ РјРѕР¶РЅРѕ СЃРѕС…СЂР°РЅРёС‚СЊ Рё Р±РµР· С„РѕС‚РѕРіСЂР°С„РёРё."
+          ? "Хранилище фото пока не настроено. Профиль можно сохранить и без фотографии."
           : "Der Fotospeicher ist noch nicht eingerichtet. Du kannst dein Profil auch ohne Foto speichern.",
       );
     } finally {
@@ -2426,15 +2602,40 @@ export default function HomePage() {
             )}
 
             {area === "founder" && (
-              <FounderDashboard
-                t={t}
-                locale={locale}
-                founderMetrics={founderMetrics}
-                founderFunnel={founderFunnel}
-                founderCharts={founderCharts}
-                communityPipeline={communityPipeline}
-                revenueCards={revenueCards}
-              />
+              authSessionLoading || (authUser && !profileLookupComplete) ? (
+                <div className="space-y-4">
+                  <LoadingCard lines={4} />
+                  <LoadingCard lines={3} />
+                </div>
+              ) : !authUser ? null : !hasFounderAccess ? (
+                <PanelCard title={locale === "ru" ? "Доступ ограничен" : "Zugriff eingeschränkt"}>
+                  <p className="text-sm leading-7 text-[#C7D1E0]">
+                    {locale === "ru"
+                      ? "У вас нет доступа к этому разделу."
+                      : "Sie haben keinen Zugriff auf diesen Bereich."}
+                  </p>
+                </PanelCard>
+              ) : (
+                <FounderDashboard
+                  t={t}
+                  locale={locale}
+                  founderMetrics={founderMetrics}
+                  founderMetricSnapshot={founderMetricSnapshot}
+                  founderMetricsLoading={founderMetricsLoading}
+                  founderMetricsMessage={founderMetricsMessage}
+                  founderUsers={remoteProfiles}
+                  founderUsersLoading={profilesLoading}
+                  founderUsersMessage={founderUsersMessage ?? profilesMessage}
+                  founderUsersMessageTone={founderUsersMessage ? founderUsersMessageTone : "warning"}
+                  founderRoleActionUserId={founderRoleActionUserId}
+                  founderRoleActionRole={founderRoleActionRole}
+                  onUpdateFounderUserRole={updateFounderUserRole}
+                  founderFunnel={founderFunnel}
+                  founderCharts={founderCharts}
+                  communityPipeline={communityPipeline}
+                  revenueCards={revenueCards}
+                />
+              )
             )}
 
             {area === "admin" && (
@@ -2715,7 +2916,7 @@ function AuthenticatedShell({
             <div className="flex items-center gap-3">
               <div
                 className="flex h-9 items-center rounded-full border border-white/10 bg-white/[0.06] p-1 text-[11px] font-medium"
-                aria-label={locale === "ru" ? "РџРµСЂРµРєР»СЋС‡РёС‚СЊ СЏР·С‹Рє" : "Sprache wechseln"}
+                aria-label={locale === "ru" ? "Переключить язык" : "Sprache wechseln"}
               >
                 {(["ru", "de"] as const).map((item) => (
                   <button
@@ -2751,7 +2952,7 @@ function AuthenticatedShell({
                 className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-3 py-2 text-xs font-medium text-white"
               >
                 <LogOut className="h-4 w-4" />
-                {locale === "ru" ? "Р’С‹Р№С‚Рё" : "Abmelden"}
+                {locale === "ru" ? "Выйти" : "Abmelden"}
               </button>
             </div>
           </div>
@@ -2939,11 +3140,11 @@ function AppExperience({
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
   const [eventReferenceNow] = useState(() => Date.now());
   const navLabels = {
-    home: isRuLocale ? "Р“Р»Р°РІРЅР°СЏ" : "Start",
-    people: isRuLocale ? "Р›СЋРґРё" : "Menschen",
-    chats: isRuLocale ? "Р§Р°С‚С‹" : "Chats",
-    events: isRuLocale ? "РЎРѕР±С‹С‚РёСЏ" : "Events",
-    profile: isRuLocale ? "РџСЂРѕС„РёР»СЊ" : "Profil",
+    home: isRuLocale ? "Главная" : "Start",
+    people: isRuLocale ? "Люди" : "Menschen",
+    chats: isRuLocale ? "Чаты" : "Chats",
+    events: isRuLocale ? "События" : "Events",
+    profile: isRuLocale ? "Профиль" : "Profil",
   } as const;
   const activeScreen =
     standalone
@@ -2974,11 +3175,11 @@ function AppExperience({
   const shouldShowHomeLoading =
     supabaseConfigured && Boolean(authUser) && !profileLookupComplete && !hasProfile;
   const connectionActionCopy = {
-    no_request: isRuLocale ? "рџ¤ќ РџРѕР·РЅР°РєРѕРјРёС‚СЊСЃСЏ" : "рџ¤ќ Kennenlernen",
-    pending_sent: isRuLocale ? "вЏі Р—Р°РїСЂРѕСЃ РѕС‚РїСЂР°РІР»РµРЅ" : "вЏі Anfrage gesendet",
-    pending_received: isRuLocale ? "РћС‚РІРµС‚РёС‚СЊ РЅР° Р·Р°РїСЂРѕСЃ" : "Auf Anfrage antworten",
-    accepted: isRuLocale ? "рџ’¬ РћС‚РєСЂС‹С‚СЊ С‡Р°С‚" : "рџ’¬ Chat Г¶ffnen",
-    declined: isRuLocale ? "Р—Р°РїСЂРѕСЃ РѕС‚РєР»РѕРЅС‘РЅ" : "Anfrage abgelehnt",
+    no_request: isRuLocale ? "🤝 Познакомиться" : "🤝 Kennenlernen",
+    pending_sent: isRuLocale ? "⏳ Запрос отправлен" : "⏳ Anfrage gesendet",
+    pending_received: isRuLocale ? "Ответить на запрос" : "Auf Anfrage antworten",
+    accepted: isRuLocale ? "💬 Открыть чат" : "💬 Chat öffnen",
+    declined: isRuLocale ? "Запрос отклонён" : "Anfrage abgelehnt",
   } satisfies Record<ConnectionState, string>;
 
   function getPersonConnectionState(person: Person): ConnectionState {
@@ -3002,9 +3203,9 @@ function AppExperience({
   const shouldShowCommunitiesLoading = communitiesLoading || communityMembersLoading;
   const shouldShowEventsLoading = eventsLoading || eventRsvpsLoading;
   const communityLoadMessage =
-    communitiesMessage && (isRuLocale ? "РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ РґР°РЅРЅС‹Рµ" : "Daten konnten nicht geladen werden");
+    communitiesMessage && (isRuLocale ? "Не удалось загрузить данные" : "Daten konnten nicht geladen werden");
   const eventLoadMessage =
-    eventsMessage && (isRuLocale ? "РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РіСЂСѓР·РёС‚СЊ РґР°РЅРЅС‹Рµ" : "Daten konnten nicht geladen werden");
+    eventsMessage && (isRuLocale ? "Не удалось загрузить данные" : "Daten konnten nicht geladen werden");
   const sortedEventRows = [...eventRows].sort(
     (left, right) => new Date(left.starts_at).getTime() - new Date(right.starts_at).getTime(),
   );
@@ -3110,49 +3311,49 @@ function AppExperience({
                 ) : (
                   <>
                     <MobileHeroCard
-                      title={isRuLocale ? "Р”РѕР±СЂРѕ РїРѕР¶Р°Р»РѕРІР°С‚СЊ РІ NeuStart" : "Willkommen bei NeuStart"}
+                      title={isRuLocale ? "Добро пожаловать в NeuStart" : "Willkommen bei NeuStart"}
                       text={
                         isRuLocale
-                          ? "Р—РґРµСЃСЊ РЅР°С‡РёРЅР°РµС‚СЃСЏ РІР°С€ РЅРѕРІС‹Р№ СЃС‚Р°СЂС‚: Р·Р°РїРѕР»РЅРёС‚Рµ РїСЂРѕС„РёР»СЊ, РЅР°Р№РґРёС‚Рµ Р»СЋРґРµР№ Рё РїРµСЂРµС…РѕРґРёС‚Рµ Рє Р¶РёРІРѕРјСѓ РѕР±С‰РµРЅРёСЋ."
-                          : "Hier beginnt dein sanfter Neustart: Profil ausfГјllen, Menschen finden und zu echten Begegnungen wechseln."
+                          ? "Здесь начинается ваш новый старт: заполните профиль, найдите людей и переходите к живому общению."
+                          : "Hier beginnt dein sanfter Neustart: Profil ausfüllen, Menschen finden und zu echten Begegnungen wechseln."
                       }
                       onPrimary={() => setScreen("profile")}
                       onSecondary={() => setScreen("people")}
                       primaryLabel={
                         hasProfile
                           ? isRuLocale
-                            ? "Р РµРґР°РєС‚РёСЂРѕРІР°С‚СЊ РїСЂРѕС„РёР»СЊ"
+                            ? "Редактировать профиль"
                             : "Profil bearbeiten"
                           : isRuLocale
-                            ? "Р—Р°РїРѕР»РЅРёС‚СЊ РїСЂРѕС„РёР»СЊ"
-                            : "Profil ausfГјllen"
+                            ? "Заполнить профиль"
+                            : "Profil ausfüllen"
                       }
-                      secondaryLabel={isRuLocale ? "РћС‚РєСЂС‹С‚СЊ Р»СЋРґРµР№" : "Menschen Г¶ffnen"}
+                      secondaryLabel={isRuLocale ? "Открыть людей" : "Menschen öffnen"}
                     />
 
                     <div className="grid gap-3">
                       <OnboardingStepCard
-                        title={isRuLocale ? "Р—Р°РїРѕР»РЅРёС‚Рµ РїСЂРѕС„РёР»СЊ" : "Profil ausfГјllen"}
+                        title={isRuLocale ? "Заполните профиль" : "Profil ausfüllen"}
                         text={
                           isRuLocale
-                            ? "РџР°СЂР° РјРёРЅСѓС‚ РЅР° РёРјСЏ, РіРѕСЂРѕРґ Рё РёРЅС‚РµСЂРµСЃС‹ вЂ” Рё РІ РїСЂРёР»РѕР¶РµРЅРёРё РІР°СЃ СѓР¶Рµ СЃРјРѕРіСѓС‚ СѓРІРёРґРµС‚СЊ."
-                            : "Ein paar Minuten fГјr Name, Stadt und Interessen вЂ” und du wirst in der App sichtbar."
+                            ? "Пара минут на имя, город и интересы — и в приложении вас уже смогут увидеть."
+                            : "Ein paar Minuten für Name, Stadt und Interessen — und du wirst in der App sichtbar."
                         }
                       />
                       <OnboardingStepCard
-                        title={isRuLocale ? "РџРѕР·РЅР°РєРѕРјСЊС‚РµСЃСЊ СЃ Р»СЋРґСЊРјРё" : "Menschen kennenlernen"}
+                        title={isRuLocale ? "Познакомьтесь с людьми" : "Menschen kennenlernen"}
                         text={
                           isRuLocale
-                            ? "NeuStart РїРѕРєР°Р·С‹РІР°РµС‚ С‚РѕР»СЊРєРѕ РЅРѕРІС‹Рµ РїРѕР»РµР·РЅС‹Рµ Р·РЅР°РєРѕРјСЃС‚РІР° Р±РµР· Р±РµСЃРєРѕРЅРµС‡РЅРѕР№ Р»РµРЅС‚С‹."
+                            ? "NeuStart показывает только новые полезные знакомства без бесконечной ленты."
                             : "NeuStart zeigt dir nur neue, hilfreiche Kontakte statt einer endlosen Timeline."
                         }
                       />
                       <OnboardingStepCard
-                        title={isRuLocale ? "РџРѕСЃРµС‰Р°Р№С‚Рµ РјРµСЂРѕРїСЂРёСЏС‚РёСЏ" : "Events besuchen"}
+                        title={isRuLocale ? "Посещайте мероприятия" : "Events besuchen"}
                         text={
                           isRuLocale
-                            ? "РћС‡РµРЅСЊ СЃРєРѕСЂРѕ Р·РґРµСЃСЊ РїРѕСЏРІСЏС‚СЃСЏ Р»РѕРєР°Р»СЊРЅС‹Рµ РІСЃС‚СЂРµС‡Рё Рё community-С„РѕСЂРјР°С‚С‹."
-                            : "Als NГ¤chstes erscheinen hier ruhige lokale Treffen und Community-Formate."
+                            ? "Очень скоро здесь появятся локальные встречи и community-форматы."
+                            : "Als Nächstes erscheinen hier ruhige lokale Treffen und Community-Formate."
                         }
                       />
                     </div>
@@ -3172,10 +3373,10 @@ function AppExperience({
                     ))}
                     {!discoveryPeople.length && (
                       <EmptyMobileCard
-                        title={isRuLocale ? "РџРѕРєР° РЅРµС‚ РЅРѕРІС‹С… РєРѕРЅС‚Р°РєС‚РѕРІ" : "Noch keine neuen Kontakte"}
+                        title={isRuLocale ? "Пока нет новых контактов" : "Noch keine neuen Kontakte"}
                         text={
                           isRuLocale
-                            ? "РљР°Рє С‚РѕР»СЊРєРѕ РІ СЃРѕРѕР±С‰РµСЃС‚РІРµ РїРѕСЏРІСЏС‚СЃСЏ РЅРѕРІС‹Рµ РїРѕРґС…РѕРґСЏС‰РёРµ Р»СЋРґРё, РѕРЅРё РѕС‚РѕР±СЂР°Р·СЏС‚СЃСЏ Р·РґРµСЃСЊ."
+                            ? "Как только в сообществе появятся новые подходящие люди, они отобразятся здесь."
                             : "Sobald neue passende Menschen in der Community auftauchen, erscheinen sie hier."
                         }
                       />
@@ -3204,10 +3405,10 @@ function AppExperience({
                 <SmallSection title={t.app.peopleTitle} text={t.app.peopleText} />
                 {!supabaseConfigured && (
                   <InfoBanner
-                    title={isRuLocale ? "РџРѕРґРєР»СЋС‡РµРЅРёРµ РґР°РЅРЅС‹С…" : "Datenverbindung"}
+                    title={isRuLocale ? "Подключение данных" : "Datenverbindung"}
                     text={
                       isRuLocale
-                        ? "Р”Р°РЅРЅС‹Рµ СЃРѕРѕР±С‰РµСЃС‚РІР° РµС‰С‘ РїРѕРґРєР»СЋС‡Р°СЋС‚СЃСЏ. РљР°Рє С‚РѕР»СЊРєРѕ СЃРѕРµРґРёРЅРµРЅРёРµ Р±СѓРґРµС‚ РіРѕС‚РѕРІРѕ, Р·РґРµСЃСЊ РїРѕСЏРІСЏС‚СЃСЏ СЂРµР°Р»СЊРЅС‹Рµ Р»СЋРґРё."
+                        ? "Данные сообщества ещё подключаются. Как только соединение будет готово, здесь появятся реальные люди."
                         : "Die Community-Daten werden noch verbunden. Sobald die Verbindung bereit ist, erscheinen hier echte Menschen."
                     }
                   />
@@ -3233,7 +3434,7 @@ function AppExperience({
                     interestsLabel={t.app.interestsTitle}
                     lookingForLabel={t.app.lookingForTitle}
                     aboutLabel={t.app.profileFields.about}
-                    backLabel={isRuLocale ? "РќР°Р·Р°Рґ" : "ZurГјck"}
+                    backLabel={isRuLocale ? "Назад" : "Zurück"}
                     actionLabel={getConnectionAction(selectedPerson).label}
                     actionDisabled={getConnectionAction(selectedPerson).disabled}
                     onBack={() => setPersonDetailOpen(false)}
@@ -3260,10 +3461,10 @@ function AppExperience({
                     {pendingSentPeople.length > 0 && (
                       <div className="space-y-3">
                         <SmallSection
-                          title={isRuLocale ? "РћР¶РёРґР°СЋС‚ РѕС‚РІРµС‚Р°" : "Warten auf Antwort"}
+                          title={isRuLocale ? "Ожидают ответа" : "Warten auf Antwort"}
                           text={
                             isRuLocale
-                              ? "Р’С‹ СѓР¶Рµ РѕС‚РїСЂР°РІРёР»Рё СЌС‚РёРј Р»СЋРґСЏРј Р·Р°РїСЂРѕСЃ РЅР° Р·РЅР°РєРѕРјСЃС‚РІРѕ."
+                              ? "Вы уже отправили этим людям запрос на знакомство."
                               : "Diesen Personen hast du bereits eine Anfrage geschickt."
                           }
                         />
@@ -3288,10 +3489,10 @@ function AppExperience({
                     {pendingReceivedPeople.length > 0 && (
                       <div className="space-y-3">
                         <SmallSection
-                          title={isRuLocale ? "Р–РґСѓС‚ РІР°С€РµРіРѕ РѕС‚РІРµС‚Р°" : "Warten auf deine Antwort"}
+                          title={isRuLocale ? "Ждут вашего ответа" : "Warten auf deine Antwort"}
                           text={
                             isRuLocale
-                              ? "Р­С‚Рё СѓС‡Р°СЃС‚РЅРёРєРё СѓР¶Рµ РѕС‚РїСЂР°РІРёР»Рё РІР°Рј Р·Р°РїСЂРѕСЃ. РњРѕР¶РЅРѕ СЃСЂР°Р·Сѓ РїРµСЂРµР№С‚Рё Рє РѕС‚РІРµС‚Сѓ."
+                              ? "Эти участники уже отправили вам запрос. Можно сразу перейти к ответу."
                               : "Diese Mitglieder haben dir bereits geschrieben. Du kannst direkt antworten."
                           }
                         />
@@ -3339,10 +3540,10 @@ function AppExperience({
             {activeScreen === "communities" && (
               <div className="space-y-4">
                 <SmallSection
-                  title={isRuLocale ? "РЎРѕРѕР±С‰РµСЃС‚РІР°" : "Communities"}
+                  title={isRuLocale ? "Сообщества" : "Communities"}
                   text={
                     isRuLocale
-                      ? "РџСЂРёСЃРѕРµРґРёРЅСЏР№С‚РµСЃСЊ Рє Р»РѕРєР°Р»СЊРЅС‹Рј РєСЂСѓРіР°Рј, РіРґРµ РїСЂРѕС‰Рµ РЅР°Р№С‚Рё РѕРїРѕСЂСѓ, СЃРѕР±С‹С‚РёСЏ Рё Р»СЋРґРµР№ СЂСЏРґРѕРј."
+                      ? "Присоединяйтесь к локальным кругам, где проще найти опору, события и людей рядом."
                       : "Tritt lokalen Communities bei, in denen du leichter Halt, Events und passende Menschen findest."
                   }
                 />
@@ -3354,7 +3555,7 @@ function AppExperience({
                   </div>
                 ) : communities.length === 0 ? (
                   <EmptyMobileCard
-                    title={isRuLocale ? "РџРѕРєР° РЅРµС‚ СЃРѕРѕР±С‰РµСЃС‚РІ" : "Noch keine Communities"}
+                    title={isRuLocale ? "Пока нет сообществ" : "Noch keine Communities"}
                     text={
                       isRuLocale
                         ? "Пока здесь нет сообществ. Как только появятся первые круги Riwvel, они сразу отобразятся здесь."
@@ -3396,19 +3597,19 @@ function AppExperience({
                 <div className="flex items-center gap-2">
                   <SegmentedPill
                     active={eventFeedTab === "upcoming"}
-                    label={isRuLocale ? "РЎРєРѕСЂРѕ" : "Upcoming"}
+                    label={isRuLocale ? "Скоро" : "Upcoming"}
                     onClick={() => setEventFeedTab("upcoming")}
                   />
                   <SegmentedPill
                     active={eventFeedTab === "mine"}
-                    label={isRuLocale ? "РњРѕРё СЃРѕР±С‹С‚РёСЏ" : "Meine Events"}
+                    label={isRuLocale ? "Мои события" : "Meine Events"}
                     onClick={() => setEventFeedTab("mine")}
                   />
                   <button
                     onClick={() => setScreen("communities")}
                     className="ml-auto rounded-full border border-white/10 bg-white/[0.05] px-3 py-2 text-xs font-medium text-white"
                   >
-                    {isRuLocale ? "РЎРѕРѕР±С‰РµСЃС‚РІР°" : "Communities"}
+                    {isRuLocale ? "Сообщества" : "Communities"}
                   </button>
                 </div>
                 {eventLoadMessage && <InlineNote text={eventLoadMessage} tone="warning" />}
@@ -3436,8 +3637,8 @@ function AppExperience({
                 ) : (eventFeedTab === "upcoming" ? futureEventRows : myEventRows).length === 0 ? (
                   <EmptyMobileCard
                     title={eventFeedTab === "upcoming"
-                      ? isRuLocale ? "РџРѕРєР° РЅРµС‚ СЃРѕР±С‹С‚РёР№" : "Noch keine Events"
-                      : isRuLocale ? "РЈ РІР°СЃ РїРѕРєР° РЅРµС‚ Р·Р°РїРёСЃРµР№" : "Du hast noch keine Zusagen"}
+                      ? isRuLocale ? "Пока нет событий" : "Noch keine Events"
+                      : isRuLocale ? "У вас пока нет записей" : "Du hast noch keine Zusagen"}
                     text={
                       eventFeedTab === "upcoming"
                         ? isRuLocale
@@ -3474,21 +3675,21 @@ function AppExperience({
             {activeScreen === "contacts" && (
               <div className="space-y-4">
                 <SmallSection
-                  title={isRuLocale ? "Р§Р°С‚С‹" : "Chats"}
+                  title={isRuLocale ? "Чаты" : "Chats"}
                   text={
                     isRuLocale
-                      ? "Р—РґРµСЃСЊ РІРёРґРЅС‹ РїРѕРґС‚РІРµСЂР¶РґС‘РЅРЅС‹Рµ Р·РЅР°РєРѕРјСЃС‚РІР° Рё РїРѕСЃР»РµРґРЅРёРµ СЃРѕРѕР±С‰РµРЅРёСЏ."
-                      : "Hier siehst du bestГ¤tigte Kontakte und die letzten Nachrichten."
+                      ? "Здесь видны подтверждённые знакомства и последние сообщения."
+                      : "Hier siehst du bestätigte Kontakte und die letzten Nachrichten."
                   }
                 />
                 <div className="flex items-center justify-between gap-3 rounded-[22px] border border-white/10 bg-white/[0.04] px-4 py-3">
                   <div>
                     <p className="text-sm font-medium text-white">
-                      {isRuLocale ? "Р—Р°РїСЂРѕСЃС‹ РЅР° Р·РЅР°РєРѕРјСЃС‚РІРѕ" : "Kontaktanfragen"}
+                      {isRuLocale ? "Запросы на знакомство" : "Kontaktanfragen"}
                     </p>
                     <p className="mt-1 text-xs text-[#8A94A6]">
                       {isRuLocale
-                        ? "РќРѕРІС‹Рµ РІС…РѕРґСЏС‰РёРµ РїСЂРёРіР»Р°С€РµРЅРёСЏ Р¶РґСѓС‚ РІР°С€РµРіРѕ СЂРµС€РµРЅРёСЏ."
+                        ? "Новые входящие приглашения ждут вашего решения."
                         : "Neue eingehende Einladungen warten auf deine Entscheidung."}
                     </p>
                   </div>
@@ -3496,7 +3697,7 @@ function AppExperience({
                     onClick={onOpenRequests}
                     className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-3 py-2 text-xs font-medium text-white"
                   >
-                    <span>{isRuLocale ? "РћС‚РєСЂС‹С‚СЊ" : "Г–ffnen"}</span>
+                    <span>{isRuLocale ? "Открыть" : "Öffnen"}</span>
                     {currentIncomingRequestCount > 0 && (
                       <span className="rounded-full bg-[#007AFF] px-2 py-0.5 text-[10px] font-semibold text-white">
                         {currentIncomingRequestCount}
@@ -3508,11 +3709,11 @@ function AppExperience({
                   <LoadingCard lines={3} />
                 ) : chatThreads.length === 0 ? (
                   <EmptyMobileCard
-                    title={isRuLocale ? "РџРѕРєР° РЅРµС‚ Р·РЅР°РєРѕРјСЃС‚РІ." : "Noch keine Bekanntschaften."}
+                    title={isRuLocale ? "Пока нет знакомств." : "Noch keine Bekanntschaften."}
                     text={
                       isRuLocale
-                        ? "РџРѕР·РЅР°РєРѕРјСЊС‚РµСЃСЊ СЃ Р»СЋРґСЊРјРё РІРѕ РІРєР»Р°РґРєРµ В«Р›СЋРґРёВ»."
-                        : "Lerne Menschen im Bereich вЂћMenschenвЂњ kennen."
+                        ? "Познакомьтесь с людьми во вкладке «Люди»."
+                        : "Lerne Menschen im Bereich „Menschen“ kennen."
                     }
                   />
                 ) : (
@@ -3537,22 +3738,22 @@ function AppExperience({
             {activeScreen === "requests" && (
               <div className="space-y-4">
                 <SmallSection
-                  title={isRuLocale ? "Р—Р°РїСЂРѕСЃС‹" : "Anfragen"}
+                  title={isRuLocale ? "Запросы" : "Anfragen"}
                   text={
                     isRuLocale
-                      ? "Р—РґРµСЃСЊ РїРѕСЏРІР»СЏСЋС‚СЃСЏ РЅРѕРІС‹Рµ РїСЂРёРіР»Р°С€РµРЅРёСЏ РЅР° Р·РЅР°РєРѕРјСЃС‚РІРѕ РѕС‚ РґСЂСѓРіРёС… СѓС‡Р°СЃС‚РЅРёРєРѕРІ."
+                      ? "Здесь появляются новые приглашения на знакомство от других участников."
                       : "Hier erscheinen neue Einladungen anderer Mitglieder."
                   }
                 />
-                {requestsLoading && <InlineNote text={isRuLocale ? "Р—Р°РїСЂРѕСЃС‹ Р·Р°РіСЂСѓР¶Р°СЋС‚СЃСЏ..." : "Anfragen werden geladen..."} />}
+                {requestsLoading && <InlineNote text={isRuLocale ? "Запросы загружаются..." : "Anfragen werden geladen..."} />}
                 {requestsMessage && <InlineNote text={requestsMessage} tone="warning" />}
                 {!requestsLoading && incomingRequests.length === 0 && (
                   <EmptyMobileCard
-                    title={isRuLocale ? "РџРѕРєР° РЅРµС‚ РЅРѕРІС‹С… Р·Р°РїСЂРѕСЃРѕРІ" : "Noch keine neuen Anfragen"}
+                    title={isRuLocale ? "Пока нет новых запросов" : "Noch keine neuen Anfragen"}
                     text={
                       isRuLocale
-                        ? "РљР°Рє С‚РѕР»СЊРєРѕ РєС‚Рѕ-С‚Рѕ Р·Р°С…РѕС‡РµС‚ РїРѕР·РЅР°РєРѕРјРёС‚СЊСЃСЏ, Р·Р°РїСЂРѕСЃ РїРѕСЏРІРёС‚СЃСЏ Р·РґРµСЃСЊ."
-                        : "Sobald jemand dich kennenlernen mГ¶chte, erscheint die Anfrage hier."
+                        ? "Как только кто-то захочет познакомиться, запрос появится здесь."
+                        : "Sobald jemand dich kennenlernen möchte, erscheint die Anfrage hier."
                     }
                   />
                 )}
@@ -3569,8 +3770,8 @@ function AppExperience({
                       person={requestPerson}
                       message={request.message}
                       date={formatRequestDate(isRuLocale ? "ru" : "de", request.created_at)}
-                      acceptLabel={isRuLocale ? "вњ… РџСЂРёРЅСЏС‚СЊ" : "вњ… Annehmen"}
-                      declineLabel={isRuLocale ? "вќЊ РћС‚РєР»РѕРЅРёС‚СЊ" : "вќЊ Ablehnen"}
+                      acceptLabel={isRuLocale ? "✅ Принять" : "✅ Annehmen"}
+                      declineLabel={isRuLocale ? "❌ Отклонить" : "❌ Ablehnen"}
                       onAccept={() => void onUpdateConnectionRequestStatus(request.id, "accepted")}
                       onDecline={() => void onUpdateConnectionRequestStatus(request.id, "declined")}
                     />
@@ -3582,22 +3783,22 @@ function AppExperience({
             {activeScreen === "chat" && (
               <div className="space-y-4">
                 <SmallSection
-                  title={chatPartner?.name ?? (isRuLocale ? "Р§Р°С‚" : "Chat")}
+                  title={chatPartner?.name ?? (isRuLocale ? "Чат" : "Chat")}
                   text={
                     chatPartner
-                      ? `${chatPartner.city} вЂў ${chatPartner.profession}`
+                      ? `${chatPartner.city} • ${chatPartner.profession}`
                       : isRuLocale
-                        ? "РћС‚РєСЂРѕР№С‚Рµ РїРѕРґС‚РІРµСЂР¶РґРµРЅРЅС‹Р№ РєРѕРЅС‚Р°РєС‚, С‡С‚РѕР±С‹ РЅР°С‡Р°С‚СЊ РґРёР°Р»РѕРі."
-                        : "Г–ffne einen bestГ¤tigten Kontakt, um den Dialog zu starten."
+                        ? "Откройте подтвержденный контакт, чтобы начать диалог."
+                        : "Öffne einen bestätigten Kontakt, um den Dialog zu starten."
                   }
                 />
                 {!chatPartner ? (
                   <EmptyMobileCard
-                    title={isRuLocale ? "РљРѕРЅС‚Р°РєС‚ РЅРµ РЅР°Р№РґРµРЅ" : "Kontakt nicht gefunden"}
+                    title={isRuLocale ? "Контакт не найден" : "Kontakt nicht gefunden"}
                     text={
                       isRuLocale
-                        ? "Р’РµСЂРЅРёС‚РµСЃСЊ РІ РєРѕРЅС‚Р°РєС‚С‹ Рё РѕС‚РєСЂРѕР№С‚Рµ С‡Р°С‚ Р·Р°РЅРѕРІРѕ."
-                        : "Gehe zurГјck zu den Kontakten und Г¶ffne den Chat erneut."
+                        ? "Вернитесь в контакты и откройте чат заново."
+                        : "Gehe zurück zu den Kontakten und öffne den Chat erneut."
                     }
                   />
                 ) : (
@@ -3628,8 +3829,8 @@ function AppExperience({
                   <InlineNote
                     text={
                       isRuLocale
-                        ? "РЎРЅР°С‡Р°Р»Р° Р·Р°РїРѕР»РЅРёС‚Рµ РїСЂРѕС„РёР»СЊ. РџРѕСЃР»Рµ СЌС‚РѕРіРѕ РІС‹ СЃСЂР°Р·Сѓ СѓРІРёРґРёС‚Рµ Р»СЋРґРµР№ Рё С‡Р°С‚С‹."
-                        : "FГјlle zuerst dein Profil aus. Danach siehst du sofort Menschen und Chats."
+                        ? "Сначала заполните профиль. После этого вы сразу увидите людей и чаты."
+                        : "Fülle zuerst dein Profil aus. Danach siehst du sofort Menschen und Chats."
                     }
                     tone="info"
                   />
@@ -3637,10 +3838,10 @@ function AppExperience({
 
                 {isProfileReadyToRender && !supabaseConfigured && (
                   <InfoBanner
-                    title={isRuLocale ? "РџРѕРґРєР»СЋС‡РµРЅРёРµ РґР°РЅРЅС‹С…" : "Datenverbindung"}
+                    title={isRuLocale ? "Подключение данных" : "Datenverbindung"}
                     text={
                       isRuLocale
-                        ? "РџР»Р°С‚С„РѕСЂРјР° РµС‰С‘ РїРѕРґРєР»СЋС‡Р°РµС‚СЃСЏ Рє РґР°РЅРЅС‹Рј. РќРѕ РїСЂРѕС„РёР»СЊ СѓР¶Рµ РјРѕР¶РЅРѕ РїРѕРґРіРѕС‚РѕРІРёС‚СЊ."
+                        ? "Платформа ещё подключается к данным. Но профиль уже можно подготовить."
                         : "Die Community-Daten werden noch verbunden. Du kannst dein Profil aber schon vorbereiten."
                     }
                   />
@@ -3682,11 +3883,11 @@ function AppExperience({
                             >
                                 {avatarUploading
                                   ? isRuLocale
-                                  ? "Р—Р°РіСЂСѓР·РєР° С„РѕС‚Рѕ..."
+                                  ? "Загрузка фото..."
                                   : "Foto wird hochgeladen..."
                                 : isRuLocale
-                                  ? "Р’С‹Р±СЂР°С‚СЊ С„РѕС‚Рѕ"
-                                  : "Foto auswГ¤hlen"}
+                                  ? "Выбрать фото"
+                                  : "Foto auswählen"}
                             </button>
                             <input
                               ref={avatarInputRef}
@@ -3697,8 +3898,8 @@ function AppExperience({
                             />
                             <p className="text-xs leading-6 text-[#8A94A6]">
                               {isRuLocale
-                                ? "Р¤РѕС‚Рѕ Р·Р°РіСЂСѓР¶Р°РµС‚СЃСЏ РІ Р·Р°С‰РёС‰С‘РЅРЅРѕРµ С…СЂР°РЅРёР»РёС‰Рµ NeuStart. Р•СЃР»Рё Р·Р°РіСЂСѓР·РєР° РЅРµ СЃСЂР°Р±РѕС‚Р°РµС‚, РїСЂРѕС„РёР»СЊ РІСЃС‘ СЂР°РІРЅРѕ РјРѕР¶РЅРѕ СЃРѕС…СЂР°РЅРёС‚СЊ."
-                                : "Das Foto wird in den geschГјtzten NeuStart-Speicher geladen. Falls der Upload fehlschlГ¤gt, kannst du dein Profil trotzdem speichern."}
+                                ? "Фото загружается в защищённое хранилище NeuStart. Если загрузка не сработает, профиль всё равно можно сохранить."
+                                : "Das Foto wird in den geschützten NeuStart-Speicher geladen. Falls der Upload fehlschlägt, kannst du dein Profil trotzdem speichern."}
                             </p>
                           </div>
                         </div>
@@ -3781,7 +3982,7 @@ function AppExperience({
                       disabled={!canSaveProfile}
                       className="w-full rounded-[20px] bg-[#007AFF] py-3 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      {profileSaving ? "..." : isRuLocale ? "РЎРѕС…СЂР°РЅРёС‚СЊ РїСЂРѕС„РёР»СЊ" : "Profil speichern"}
+                      {profileSaving ? "..." : isRuLocale ? "Сохранить профиль" : "Profil speichern"}
                     </button>
                   </>
                 )}
@@ -3916,11 +4117,11 @@ function CommunityListCard({
           <div>
             <p className="text-lg font-semibold text-white">{community.name}</p>
             <p className="mt-1 text-xs uppercase tracking-[0.2em] text-[#8FA8D6]">
-              {[community.city, community.language, community.category].filter(Boolean).join(" вЂў ")}
+              {[community.city, community.language, community.category].filter(Boolean).join(" • ")}
             </p>
           </div>
           <span className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs text-[#C7D1E0]">
-            {memberCount} {locale === "ru" ? "СѓС‡Р°СЃС‚." : "Mitgl."}
+            {memberCount} {locale === "ru" ? "участ." : "Mitgl."}
           </span>
         </div>
         <p className="mt-3 text-sm leading-6 text-[#C7D1E0]">{community.description || " "}</p>
@@ -3934,7 +4135,7 @@ function CommunityListCard({
       >
         {loading
           ? locale === "ru"
-            ? "РЎРѕС…СЂР°РЅСЏРµРј..."
+            ? "Сохраняем..."
             : "Speichern..."
           : joined
             ? locale === "ru"
@@ -3970,21 +4171,21 @@ function CommunityDetailCard({
   return (
     <div className="space-y-4">
       <button onClick={onBack} className="text-sm text-[#8FA8D6]">
-        {locale === "ru" ? "РќР°Р·Р°Рґ Рє СЃРѕРѕР±С‰РµСЃС‚РІР°Рј" : "ZurГјck zu den Communities"}
+        {locale === "ru" ? "Назад к сообществам" : "Zurück zu den Communities"}
       </button>
       <div className="rounded-[28px] border border-white/10 bg-white/[0.05] p-5 backdrop-blur-[24px]">
         <p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-[#8FA8D6]">
-          {[community.city, community.language, community.category].filter(Boolean).join(" вЂў ")}
+          {[community.city, community.language, community.category].filter(Boolean).join(" • ")}
         </p>
         <h3 className="mt-3 text-2xl font-semibold tracking-[-0.04em] text-white">{community.name}</h3>
         <p className="mt-4 text-sm leading-7 text-[#C7D1E0]">{community.description || " "}</p>
         <div className="mt-4 rounded-[20px] border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-[#D3DCE8]">
-          {locale === "ru" ? "РЈС‡Р°СЃС‚РЅРёРєРѕРІ" : "Mitglieder"}: {memberCount}
+          {locale === "ru" ? "Участников" : "Mitglieder"}: {memberCount}
         </div>
         {memberCount === 0 ? (
           <p className="mt-3 text-sm text-[#8A94A6]">
             {locale === "ru"
-              ? "РџРѕРєР° РІ СЌС‚РѕРј СЃРѕРѕР±С‰РµСЃС‚РІРµ РЅРµС‚ СѓС‡Р°СЃС‚РЅРёРєРѕРІ. Р’С‹ РјРѕР¶РµС‚Рµ РїСЂРёСЃРѕРµРґРёРЅРёС‚СЊСЃСЏ РїРµСЂРІС‹Рј."
+              ? "Пока в этом сообществе нет участников. Вы можете присоединиться первым."
               : "Noch keine Mitglieder in dieser Community. Du kannst als Erste:r beitreten."}
           </p>
         ) : null}
@@ -3997,14 +4198,14 @@ function CommunityDetailCard({
         >
           {loading
             ? locale === "ru"
-              ? "РЎРѕС…СЂР°РЅСЏРµРј..."
+              ? "Сохраняем..."
               : "Speichern..."
             : joined
               ? locale === "ru"
-                ? "РџРѕРєРёРЅСѓС‚СЊ СЃРѕРѕР±С‰РµСЃС‚РІРѕ"
+                ? "Покинуть сообщество"
                 : "Community verlassen"
               : locale === "ru"
-                ? "Р’СЃС‚СѓРїРёС‚СЊ РІ СЃРѕРѕР±С‰РµСЃС‚РІРѕ"
+                ? "Вступить в сообщество"
                 : "Community beitreten"}
         </button>
       </div>
@@ -4044,7 +4245,7 @@ function EventListCard({
             <div>
               <p className="text-lg font-semibold text-white">{event.title}</p>
               <p className="mt-1 text-xs uppercase tracking-[0.2em] text-[#8FA8D6]">
-                {[event.category, event.language].filter(Boolean).join(" вЂў ")}
+                {[event.category, event.language].filter(Boolean).join(" • ")}
               </p>
             </div>
             {communityName ? (
@@ -4057,12 +4258,12 @@ function EventListCard({
           <p className="text-sm text-[#C7D1E0]">{formatEventLocation(locale, event.city, event.address, event.online_url)}</p>
           {event.organizer ? (
             <p className="text-sm text-[#C7D1E0]">
-              {locale === "ru" ? "РћСЂРіР°РЅРёР·Р°С‚РѕСЂ" : "Organisiert von"}: {event.organizer}
+              {locale === "ru" ? "Организатор" : "Organisiert von"}: {event.organizer}
             </p>
           ) : null}
           <p className="text-sm leading-6 text-[#A8B6CB]">{event.description || " "}</p>
           <p className="text-xs text-[#8A94A6]">
-            {locale === "ru" ? "РЈС‡Р°СЃС‚РЅРёРєРѕРІ" : "Teilnehmende"}: {attendeeCount}
+            {locale === "ru" ? "Участников" : "Teilnehmende"}: {attendeeCount}
             {event.capacity ? ` / ${event.capacity}` : ""}
           </p>
         </div>
@@ -4077,14 +4278,14 @@ function EventListCard({
         >
           {loading
             ? locale === "ru"
-              ? "РЎРѕС…СЂР°РЅСЏРµРј..."
+              ? "Сохраняем..."
               : "Speichern..."
             : isGoing
               ? locale === "ru"
-                ? "Р’С‹ РёРґС‘С‚Рµ"
+                ? "Вы идёте"
                 : "Du gehst hin"
               : locale === "ru"
-                ? "РЇ РёРґСѓ"
+                ? "Я иду"
                 : "Ich gehe hin"}
         </button>
         {isGoing ? (
@@ -4093,7 +4294,7 @@ function EventListCard({
             disabled={loading}
             className="w-full rounded-[20px] border border-white/10 bg-transparent px-4 py-3 text-sm font-medium text-[#C7D1E0]"
           >
-            {locale === "ru" ? "РћС‚РјРµРЅРёС‚СЊ" : "Absagen"}
+            {locale === "ru" ? "Отменить" : "Absagen"}
           </button>
         ) : null}
       </div>
@@ -4127,7 +4328,7 @@ function EventDetailCard({
   return (
     <div className="space-y-4">
       <button onClick={onBack} className="text-sm text-[#8FA8D6]">
-        {locale === "ru" ? "РќР°Р·Р°Рґ Рє СЃРѕР±С‹С‚РёСЏРј" : "ZurГјck zu den Events"}
+        {locale === "ru" ? "Назад к событиям" : "Zurück zu den Events"}
       </button>
       <div className="overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.05] backdrop-blur-[24px]">
         <div className="h-40 bg-[linear-gradient(135deg,rgba(0,122,255,0.38),rgba(99,102,241,0.2),rgba(255,255,255,0.06))]" />
@@ -4135,7 +4336,7 @@ function EventDetailCard({
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-[#8FA8D6]">
-                {[event.category, event.language].filter(Boolean).join(" вЂў ")}
+                {[event.category, event.language].filter(Boolean).join(" • ")}
               </p>
               <h3 className="mt-3 text-2xl font-semibold tracking-[-0.04em] text-white">{event.title}</h3>
             </div>
@@ -4149,7 +4350,7 @@ function EventDetailCard({
           <p className="text-sm text-[#D3DCE8]">{formatEventLocation(locale, event.city, event.address, event.online_url)}</p>
           {event.organizer ? (
             <p className="text-sm text-[#D3DCE8]">
-              {locale === "ru" ? "РћСЂРіР°РЅРёР·Р°С‚РѕСЂ" : "Organisiert von"}: {event.organizer}
+              {locale === "ru" ? "Организатор" : "Organisiert von"}: {event.organizer}
             </p>
           ) : null}
           {event.online_url ? (
@@ -4164,13 +4365,13 @@ function EventDetailCard({
           ) : null}
           <p className="text-sm leading-7 text-[#C7D1E0]">{event.description || " "}</p>
           <div className="rounded-[20px] border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-[#D3DCE8]">
-            {locale === "ru" ? "РЈС‡Р°СЃС‚РЅРёРєРѕРІ" : "Teilnehmende"}: {attendeeCount}
+            {locale === "ru" ? "Участников" : "Teilnehmende"}: {attendeeCount}
             {event.capacity ? ` / ${event.capacity}` : ""}
           </div>
           {attendeeCount === 0 ? (
             <p className="text-sm text-[#8A94A6]">
               {locale === "ru"
-                ? "РџРѕРєР° РЅРёРєС‚Рѕ РЅРµ Р·Р°РїРёСЃР°Р»СЃСЏ. Р’С‹ РјРѕР¶РµС‚Рµ СЃС‚Р°С‚СЊ РїРµСЂРІС‹Рј СѓС‡Р°СЃС‚РЅРёРєРѕРј."
+                ? "Пока никто не записался. Вы можете стать первым участником."
                 : "Noch keine Teilnehmenden. Du kannst die erste Zusage geben."}
             </p>
           ) : null}
@@ -4184,14 +4385,14 @@ function EventDetailCard({
             >
               {loading
                 ? locale === "ru"
-                  ? "РЎРѕС…СЂР°РЅСЏРµРј..."
+                  ? "Сохраняем..."
                   : "Speichern..."
                 : isGoing
                   ? locale === "ru"
-                    ? "Р’С‹ РёРґС‘С‚Рµ"
+                    ? "Вы идёте"
                     : "Du gehst hin"
                   : locale === "ru"
-                    ? "РЇ РёРґСѓ"
+                    ? "Я иду"
                     : "Ich gehe hin"}
             </button>
             {isGoing ? (
@@ -4200,7 +4401,7 @@ function EventDetailCard({
                 disabled={loading}
                 className="w-full rounded-[20px] border border-white/10 bg-transparent px-4 py-3 text-sm font-medium text-[#C7D1E0]"
               >
-                {locale === "ru" ? "РћС‚РјРµРЅРёС‚СЊ" : "Absagen"}
+                {locale === "ru" ? "Отменить" : "Absagen"}
               </button>
             ) : null}
           </div>
@@ -4214,6 +4415,16 @@ function FounderDashboard({
   t,
   locale,
   founderMetrics,
+  founderMetricSnapshot,
+  founderMetricsLoading,
+  founderMetricsMessage,
+  founderUsers,
+  founderUsersLoading,
+  founderUsersMessage,
+  founderUsersMessageTone,
+  founderRoleActionUserId,
+  founderRoleActionRole,
+  onUpdateFounderUserRole,
   founderFunnel,
   founderCharts,
   communityPipeline,
@@ -4222,14 +4433,76 @@ function FounderDashboard({
   t: (typeof translations)[Locale];
   locale: Locale;
   founderMetrics: (typeof founderMetricsByLocale)[Locale];
+  founderMetricSnapshot: FounderMetricSnapshot;
+  founderMetricsLoading: boolean;
+  founderMetricsMessage: string | null;
+  founderUsers: ProfileRow[];
+  founderUsersLoading: boolean;
+  founderUsersMessage: string | null;
+  founderUsersMessageTone: "info" | "warning";
+  founderRoleActionUserId: string | null;
+  founderRoleActionRole: ProfileRole | null;
+  onUpdateFounderUserRole: (targetUserId: string, nextRole: ProfileRole) => Promise<void>;
   founderFunnel: (typeof founderFunnelByLocale)[Locale];
   founderCharts: (typeof founderChartsByLocale)[Locale];
   communityPipeline: (typeof communityPipelineByLocale)[Locale];
   revenueCards: (typeof revenueCardsByLocale)[Locale];
 }) {
+  const sortedFounderUsers = [...founderUsers].sort(
+    (left, right) => new Date(right.created_at).getTime() - new Date(left.created_at).getTime(),
+  );
+  const founderPublicMetrics = [
+    {
+      label: locale === "ru" ? "Всего пользователей" : "Profile insgesamt",
+      value: founderMetricSnapshot.totalProfiles,
+    },
+    {
+      label: locale === "ru" ? "Всего сообществ" : "Communities insgesamt",
+      value: founderMetricSnapshot.totalCommunities,
+    },
+    {
+      label: locale === "ru" ? "Всего событий" : "Events insgesamt",
+      value: founderMetricSnapshot.totalEvents,
+    },
+    {
+      label: locale === "ru" ? "Запросов на знакомство" : "Kontaktanfragen insgesamt",
+      value: founderMetricSnapshot.totalConnectionRequests,
+    },
+    {
+      label: locale === "ru" ? "Сообщений в чатах" : "Chatnachrichten insgesamt",
+      value: founderMetricSnapshot.totalChatMessages,
+    },
+  ];
+
   return (
     <div className="space-y-6 lg:space-y-8">
       <SectionIntro badge={t.founder.badge} title={t.founder.title} text={t.founder.text} />
+
+      <PanelCard title={locale === "ru" ? "Ключевые метрики платформы" : "Zentrale Plattformmetriken"}>
+        {founderMetricsMessage ? <InlineNote text={founderMetricsMessage} tone="warning" className="mb-4" /> : null}
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+          {founderPublicMetrics.map((metric) => (
+            <MetricCard
+              key={metric.label}
+              value={founderMetricsLoading ? "..." : metric.value === null ? "—" : String(metric.value)}
+              label={metric.label}
+              delta={
+                founderMetricsLoading
+                  ? locale === "ru"
+                    ? "Загружаем..."
+                    : "Wird geladen..."
+                  : metric.value === null
+                    ? locale === "ru"
+                      ? "Недоступно"
+                      : "Nicht verfügbar"
+                    : locale === "ru"
+                      ? "Текущий срез Supabase"
+                      : "Aktueller Supabase-Stand"
+              }
+            />
+          ))}
+        </div>
+      </PanelCard>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {founderMetrics.map((metric) => (
@@ -4277,6 +4550,37 @@ function FounderDashboard({
             <InsightNote key={note.title} title={note.title} text={note.text} />
           ))}
         </div>
+      </PanelCard>
+
+      <PanelCard title={locale === "ru" ? "Пользователи и роли" : "Benutzer und Rollen"}>
+        {founderUsersMessage ? (
+          <InlineNote text={founderUsersMessage} tone={founderUsersMessageTone} className="mb-4" />
+        ) : null}
+        {founderUsersLoading ? (
+          <LoadingCard lines={5} />
+        ) : sortedFounderUsers.length === 0 ? (
+          <EmptyMobileCard
+            title={locale === "ru" ? "Пользователи пока не найдены" : "Noch keine Benutzer gefunden"}
+            text={
+              locale === "ru"
+                ? "Когда профили появятся в Supabase, они отобразятся здесь."
+                : "Sobald Profile in Supabase vorhanden sind, erscheinen sie hier."
+            }
+          />
+        ) : (
+          <div className="space-y-3">
+            {sortedFounderUsers.map((profile) => (
+              <FounderUserRow
+                key={profile.user_id}
+                locale={locale}
+                profile={profile}
+                loading={founderRoleActionUserId === profile.user_id}
+                pendingRole={founderRoleActionUserId === profile.user_id ? founderRoleActionRole : null}
+                onUpdateRole={onUpdateFounderUserRole}
+              />
+            ))}
+          </div>
+        )}
       </PanelCard>
     </div>
   );
@@ -4330,7 +4634,7 @@ function AdminDashboard({
               <MiniEventRow
                 key={event.title}
                 title={event.title}
-                meta={`${event.city} вЂў ${event.date}`}
+                meta={`${event.city} • ${event.date}`}
                 seatsLeft={event.seatsLeft}
               />
             ))}
@@ -4343,7 +4647,7 @@ function AdminDashboard({
               <QueueBox
                 key={person.id}
                 title={person.name}
-                meta={`${person.city} вЂў ${person.profession}`}
+                meta={`${person.city} • ${person.profession}`}
                 note={person.reason}
               />
             ))}
@@ -4629,7 +4933,7 @@ function FlowPreview({
         <FlowCard
           title="1. Profil erstellen"
           subtitle={people[0].name}
-          meta={`${people[0].city} вЂў ${people[0].language}`}
+          meta={`${people[0].city} • ${people[0].language}`}
         />
         <FlowCard
           title="2. Wochentliche Matches"
@@ -4639,7 +4943,7 @@ function FlowPreview({
         <FlowCard
           title="3. Veranstaltungen besuchen"
           subtitle={events[0].title}
-          meta={`${events[0].city} вЂў ${events[0].date}`}
+          meta={`${events[0].city} • ${events[0].date}`}
         />
       </div>
     </GlassCard>
@@ -4825,7 +5129,7 @@ function MiniProfilePreview({ person }: { person: Person }) {
         <div>
           <h4 className="text-sm font-semibold text-white">{person.name}</h4>
           <p className="text-xs text-[#8A94A6]">
-            {person.city} вЂў {person.language}
+            {person.city} • {person.language}
           </p>
         </div>
       </div>
@@ -5002,7 +5306,7 @@ function PeopleDiscoveryCard({
             <div>
               <h4 className="font-medium text-white">{person.name}</h4>
               <p className="text-sm text-[#8A94A6]">
-                {person.city} вЂў {person.profession}
+                {person.city} • {person.profession}
               </p>
             </div>
             <span className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-[11px] font-medium text-[#8EC5FF]">
@@ -5090,7 +5394,7 @@ function PersonDetailCard({
             </span>
           </div>
           <p className="mt-2 text-sm text-[#8A94A6]">
-            {person.city} вЂў {person.profession}
+            {person.city} • {person.profession}
           </p>
         </div>
       </div>
@@ -5099,17 +5403,17 @@ function PersonDetailCard({
         <DetailInfoRow
           label={languageLabel}
           items={languages}
-          fallback={locale === "ru" ? "РќРµ СѓРєР°Р·Р°РЅРѕ" : "Nicht angegeben"}
+          fallback={locale === "ru" ? "Не указано" : "Nicht angegeben"}
         />
         <DetailInfoRow
           label={interestsLabel}
           items={person.interests}
-          fallback={locale === "ru" ? "РРЅС‚РµСЂРµСЃС‹ РїРѕСЏРІСЏС‚СЃСЏ РїРѕР·Р¶Рµ" : "Interessen folgen"}
+          fallback={locale === "ru" ? "Интересы появятся позже" : "Interessen folgen"}
         />
         <DetailInfoRow
           label={lookingForLabel}
           items={person.lookingFor}
-          fallback={locale === "ru" ? "РџРѕРєР° Р±РµР· СѓС‚РѕС‡РЅРµРЅРёР№" : "Noch offen"}
+          fallback={locale === "ru" ? "Пока без уточнений" : "Noch offen"}
         />
       </div>
 
@@ -5422,7 +5726,7 @@ function ChatCard({
           className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-medium text-[#D8E6FF]"
         >
           <ChevronLeft className="h-4 w-4" />
-          {locale === "ru" ? "РќР°Р·Р°Рґ" : "ZurГјck"}
+          {locale === "ru" ? "Назад" : "Zurück"}
         </button>
         <div className="flex min-w-0 items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-[16px] border border-white/10 bg-white/[0.06] text-sm font-semibold text-white">
@@ -5446,14 +5750,14 @@ function ChatCard({
       </div>
 
       <div className="mt-4 h-[360px] space-y-3 overflow-y-auto rounded-[22px] border border-white/8 bg-black/10 p-3">
-        {loading && <InlineNote text={locale === "ru" ? "Р§Р°С‚ Р·Р°РіСЂСѓР¶Р°РµС‚СЃСЏ..." : "Chat wird geladen..."} />}
+        {loading && <InlineNote text={locale === "ru" ? "Чат загружается..." : "Chat wird geladen..."} />}
         {!loading && messages.length === 0 && (
           <EmptyMobileCard
-            title={locale === "ru" ? "РџРѕРєР° РЅРµС‚ СЃРѕРѕР±С‰РµРЅРёР№" : "Noch keine Nachrichten"}
+            title={locale === "ru" ? "Пока нет сообщений" : "Noch keine Nachrichten"}
             text={
               locale === "ru"
-                ? "РћС‚РїСЂР°РІСЊС‚Рµ РїРµСЂРІРѕРµ СЃРѕРѕР±С‰РµРЅРёРµ, С‡С‚РѕР±С‹ РЅР°С‡Р°С‚СЊ РѕР±С‰РµРЅРёРµ РІРЅСѓС‚СЂРё NeuStart."
-                : "Sende die erste Nachricht, um das GesprГ¤ch in NeuStart zu beginnen."
+                ? "Отправьте первое сообщение, чтобы начать общение внутри NeuStart."
+                : "Sende die erste Nachricht, um das Gespräch in NeuStart zu beginnen."
             }
           />
         )}
@@ -5475,7 +5779,7 @@ function ChatCard({
           value={message}
           onChange={(event) => setMessage(event.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={locale === "ru" ? "РќР°РїРёС€РёС‚Рµ СЃРѕРѕР±С‰РµРЅРёРµ..." : "Schreibe eine Nachricht..."}
+          placeholder={locale === "ru" ? "Напишите сообщение..." : "Schreibe eine Nachricht..."}
           className="min-h-[56px] flex-1 rounded-[20px] border border-white/10 bg-white/[0.05] p-4 text-sm text-white outline-none placeholder:text-[#6F7B90] focus:border-[#007AFF] focus:bg-white/[0.08]"
         />
         <button
@@ -5483,7 +5787,7 @@ function ChatCard({
           className="inline-flex h-[56px] items-center gap-2 rounded-[20px] bg-[#007AFF] px-4 text-sm font-medium text-white"
         >
           <SendHorizonal className="h-4 w-4" />
-          {locale === "ru" ? "РћС‚РїСЂР°РІРёС‚СЊ" : "Senden"}
+          {locale === "ru" ? "Отправить" : "Senden"}
         </button>
       </div>
     </div>
@@ -5539,18 +5843,18 @@ function ConnectionRequestModal({
   const quickMessages =
     locale === "ru"
       ? [
-          "рџ‘‹ РџСЂРёРІРµС‚!",
-          "в• РџСЂРµРґР»Р°РіР°СЋ РІСЃС‚СЂРµС‚РёС‚СЊСЃСЏ Р·Р° РєРѕС„Рµ",
-          "рџ¤ќ РҐРѕС‡Сѓ РїРѕР·РЅР°РєРѕРјРёС‚СЊСЃСЏ",
-          "рџ’ј РРЅС‚РµСЂРµСЃСѓРµС‚ РЅРµС‚РІРѕСЂРєРёРЅРі",
-          "рџЊї Р‘СѓРґСѓ СЂР°Рґ РѕР±С‰РµРЅРёСЋ",
+          "👋 Привет!",
+          "☕ Предлагаю встретиться за кофе",
+          "🤝 Хочу познакомиться",
+          "💼 Интересует нетворкинг",
+          "🌿 Буду рад общению",
         ]
       : [
-          "рџ‘‹ Hallo!",
+          "👋 Hallo!",
           "в• Lust auf einen Kaffee?",
-          "рџ¤ќ Ich wГјrde dich gern kennenlernen",
-          "рџ’ј Ich suche Networking",
-          "рџЊї Ich freue mich auf Austausch",
+          "🤝 Ich würde dich gern kennenlernen",
+          "💼 Ich suche Networking",
+          "🌿 Ich freue mich auf Austausch",
         ];
 
   return (
@@ -5562,22 +5866,22 @@ function ConnectionRequestModal({
               NeuStart
             </p>
             <h3 className="mt-3 text-2xl font-semibold tracking-[-0.04em] text-white">
-              {locale === "ru" ? "РџРѕР·РЅР°РєРѕРјРёС‚СЊСЃСЏ" : "Kennenlernen"}
+              {locale === "ru" ? "Познакомиться" : "Kennenlernen"}
             </h3>
             <p className="mt-2 text-sm leading-6 text-[#A8B6CB]">
               {mode === "success"
                 ? locale === "ru"
-                  ? "Р—Р°РїСЂРѕСЃ РѕС‚РїСЂР°РІР»РµРЅ. Р•СЃР»Рё РїРѕР»СЊР·РѕРІР°С‚РµР»СЊ РїСЂРёРјРµС‚ РїСЂРёРіР»Р°С€РµРЅРёРµ, РІС‹ СЃРјРѕР¶РµС‚Рµ РѕР±С‰Р°С‚СЊСЃСЏ РІРЅСѓС‚СЂРё NeuStart."
-                  : "Anfrage gesendet. Sobald die Einladung angenommen wird, kГ¶nnt ihr in NeuStart schreiben."
+                  ? "Запрос отправлен. Если пользователь примет приглашение, вы сможете общаться внутри NeuStart."
+                  : "Anfrage gesendet. Sobald die Einladung angenommen wird, könnt ihr in NeuStart schreiben."
                 : locale === "ru"
-                  ? "РћС‚РїСЂР°РІСЊС‚Рµ РЅРµР±РѕР»СЊС€РѕРµ СЃРѕРѕР±С‰РµРЅРёРµ. РџРѕСЃР»Рµ РїСЂРёРЅСЏС‚РёСЏ Р·Р°РїСЂРѕСЃР° РІС‹ СЃРјРѕР¶РµС‚Рµ РѕР±С‰Р°С‚СЊСЃСЏ РІРЅСѓС‚СЂРё NeuStart."
-                  : "Sende eine kurze Nachricht. Nach der Annahme kГ¶nnt ihr innerhalb von NeuStart schreiben."}
+                  ? "Отправьте небольшое сообщение. После принятия запроса вы сможете общаться внутри NeuStart."
+                  : "Sende eine kurze Nachricht. Nach der Annahme könnt ihr innerhalb von NeuStart schreiben."}
             </p>
           </div>
           <button
             onClick={onClose}
             className="rounded-full border border-white/10 bg-white/[0.04] p-2 text-[#D8E6FF]"
-            aria-label={locale === "ru" ? "Р—Р°РєСЂС‹С‚СЊ" : "SchlieГџen"}
+            aria-label={locale === "ru" ? "Закрыть" : "Schließen"}
           >
             <X className="h-4 w-4" />
           </button>
@@ -5622,7 +5926,7 @@ function ConnectionRequestModal({
             <div className="mt-5">
               <div className="mb-2 flex items-center justify-between gap-3">
                 <label className="text-sm font-medium text-white">
-                  {locale === "ru" ? "Р’Р°С€Рµ СЃРѕРѕР±С‰РµРЅРёРµ" : "Deine Nachricht"}
+                  {locale === "ru" ? "Ваше сообщение" : "Deine Nachricht"}
                 </label>
                 <span className="text-xs text-[#8A94A6]">{message.length}/300</span>
               </div>
@@ -5631,7 +5935,7 @@ function ConnectionRequestModal({
                 maxLength={300}
                 onChange={(event) => setMessage(event.target.value)}
                 className="min-h-[120px] w-full rounded-[22px] border border-white/10 bg-white/[0.05] p-4 text-sm text-white outline-none placeholder:text-[#6F7B90] focus:border-[#007AFF] focus:bg-white/[0.08]"
-                placeholder={locale === "ru" ? "РќР°РїРёС€РёС‚Рµ РЅРµСЃРєРѕР»СЊРєРѕ С‚С‘РїР»С‹С… СЃР»РѕРІ..." : "Schreibe ein paar warme Zeilen..."}
+                placeholder={locale === "ru" ? "Напишите несколько тёплых слов..." : "Schreibe ein paar warme Zeilen..."}
               />
             </div>
 
@@ -5640,7 +5944,7 @@ function ConnectionRequestModal({
               disabled={loading || !message.trim()}
               className="mt-5 w-full rounded-[20px] bg-[#007AFF] py-3 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {loading ? "..." : locale === "ru" ? "РћС‚РїСЂР°РІРёС‚СЊ Р·Р°РїСЂРѕСЃ" : "Anfrage senden"}
+              {loading ? "..." : locale === "ru" ? "Отправить запрос" : "Anfrage senden"}
             </button>
           </>
         ) : (
@@ -5648,7 +5952,7 @@ function ConnectionRequestModal({
             onClick={onClose}
             className="mt-6 w-full rounded-[20px] bg-[#007AFF] py-3 text-sm font-medium text-white"
           >
-            {locale === "ru" ? "РџРѕРЅСЏС‚РЅРѕ" : "Verstanden"}
+            {locale === "ru" ? "Понятно" : "Verstanden"}
           </button>
         )}
       </div>
@@ -5865,6 +6169,101 @@ function MetricCard({
   );
 }
 
+function FounderUserRow({
+  locale,
+  profile,
+  loading,
+  pendingRole,
+  onUpdateRole,
+}: {
+  locale: Locale;
+  profile: ProfileRow;
+  loading: boolean;
+  pendingRole: ProfileRole | null;
+  onUpdateRole: (targetUserId: string, nextRole: ProfileRole) => Promise<void>;
+}) {
+  const currentRole = isProfileRole(profile.role) ? profile.role : "user";
+
+  return (
+    <div className="rounded-[24px] border border-white/10 bg-white/[0.05] p-4">
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+        <div className="space-y-3">
+          <div>
+            <h4 className="text-lg font-semibold text-white">{profile.name}</h4>
+            <p className="mt-1 text-sm text-[#8A94A6]">
+              {profile.city || (locale === "ru" ? "Город не указан" : "Keine Stadt angegeben")}
+            </p>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <FounderUserMeta
+              label={locale === "ru" ? "Роль" : "Rolle"}
+              value={formatProfileRoleLabel(locale, currentRole)}
+            />
+            <FounderUserMeta
+              label={locale === "ru" ? "Создан" : "Erstellt"}
+              value={formatFounderUserDate(locale, profile.created_at)}
+            />
+            <FounderUserMeta
+              label={locale === "ru" ? "User ID" : "User-ID"}
+              value={profile.user_id}
+              mono
+            />
+          </div>
+        </div>
+
+        <div className="xl:max-w-[23rem]">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-[#8EC5FF]">
+            {locale === "ru" ? "Назначить роль" : "Rolle setzen"}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {profileRoleOptions.map((role) => {
+              const isActive = currentRole === role;
+
+              return (
+                <button
+                  key={role}
+                  type="button"
+                  disabled={loading || isActive}
+                  onClick={() => void onUpdateRole(profile.user_id, role)}
+                  className={`rounded-full border px-3 py-2 text-xs font-medium transition-all ${
+                    isActive
+                      ? "border-[#007AFF]/40 bg-[#007AFF]/18 text-[#8EC5FF]"
+                      : "border-white/10 bg-white/[0.04] text-[#D8E6FF] hover:border-[#007AFF]/30 hover:text-white"
+                  } disabled:cursor-not-allowed disabled:opacity-60`}
+                >
+                  {loading && pendingRole === role
+                    ? locale === "ru"
+                      ? "Сохраняем..."
+                      : "Speichern..."
+                    : formatProfileRoleLabel(locale, role)}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FounderUserMeta({
+  label,
+  value,
+  mono = false,
+}: {
+  label: string;
+  value: string;
+  mono?: boolean;
+}) {
+  return (
+    <div className="rounded-[18px] border border-white/8 bg-black/10 px-3 py-3">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8A94A6]">{label}</p>
+      <p className={`mt-2 break-all text-sm text-[#D8E6FF] ${mono ? "font-mono text-[13px]" : ""}`}>{value}</p>
+    </div>
+  );
+}
+
 function ChartCard({
   title,
   points,
@@ -5971,7 +6370,7 @@ function MemberRow({
             <div>
               <h4 className="font-medium text-white">{person.name}</h4>
               <p className="text-sm text-[#8A94A6]">
-                {person.city} вЂў {person.profession}
+                {person.city} • {person.profession}
               </p>
             </div>
             <span className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-[11px] font-medium text-[#8EC5FF]">
@@ -6145,7 +6544,7 @@ function formatEventDateRange(locale: Locale, startsAt: string, endsAt: string |
     minute: "2-digit",
   }).format(new Date(endsAt));
 
-  return `${startLabel} вЂ“ ${endLabel}`;
+  return `${startLabel} – ${endLabel}`;
 }
 
 function formatEventLocation(
@@ -6155,14 +6554,14 @@ function formatEventLocation(
   onlineUrl: string | null,
 ) {
   if (address?.trim()) {
-    return city?.trim() ? `${city} вЂў ${address}` : address;
+    return city?.trim() ? `${city} • ${address}` : address;
   }
 
   if (onlineUrl?.trim()) {
-    return locale === "ru" ? "РћРЅР»Р°Р№РЅ" : "Online";
+    return locale === "ru" ? "Онлайн" : "Online";
   }
 
-  return city?.trim() || (locale === "ru" ? "Р“РµСЂРјР°РЅРёСЏ" : "Deutschland");
+  return city?.trim() || (locale === "ru" ? "Германия" : "Deutschland");
 }
 
 function formatTime(locale: Locale, value: string) {
@@ -6170,6 +6569,52 @@ function formatTime(locale: Locale, value: string) {
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(value));
+}
+
+function formatFounderUserDate(locale: Locale, value: string) {
+  return new Intl.DateTimeFormat(locale === "ru" ? "ru-RU" : "de-DE", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
+
+function isProfileRole(role: string | null | undefined): role is ProfileRole {
+  return typeof role === "string" && profileRoleOptions.includes(role as ProfileRole);
+}
+
+function formatProfileRoleLabel(locale: Locale, role: ProfileRole) {
+  if (locale === "ru") {
+    if (role === "user") {
+      return "Пользователь";
+    }
+
+    if (role === "manager") {
+      return "Менеджер";
+    }
+
+    if (role === "admin") {
+      return "Админ";
+    }
+
+    return "Основатель";
+  }
+
+  if (role === "user") {
+    return "User";
+  }
+
+  if (role === "manager") {
+    return "Manager";
+  }
+
+  if (role === "admin") {
+    return "Admin";
+  }
+
+  return "Founder";
 }
 
 function splitList(value: string) {
@@ -6209,20 +6654,20 @@ function mapProfileToPerson(profile: ProfileRow, locale: Locale, index: number):
   const languages = profile.languages ?? [];
   const interests = profile.interests ?? [];
   const lookingFor = profile.looking_for ?? [];
-  const firstLanguage = languages[0] ?? (locale === "ru" ? "РќРµ СѓРєР°Р·Р°РЅРѕ" : "Nicht angegeben");
+  const firstLanguage = languages[0] ?? (locale === "ru" ? "Не указано" : "Nicht angegeben");
   const firstGoal =
-    lookingFor[0] ?? (locale === "ru" ? socialCopy.ru.communityMember : socialCopy.de.communityMember);
+      lookingFor[0] ?? (locale === "ru" ? socialCopy.ru.communityMember : socialCopy.de.communityMember);
 
   return {
     id: stringToNumberId(`${profile.user_id}-${index}`),
     userId: profile.user_id,
     name: profile.name,
     age: 0,
-    city: profile.city || (locale === "ru" ? "Р“РµСЂРјР°РЅРёСЏ" : "Deutschland"),
+    city: profile.city || (locale === "ru" ? "Германия" : "Deutschland"),
     profession: firstGoal,
     language: firstLanguage,
     about: profile.about || socialCopy[locale].freshStart,
-    photoUrl: profile.photo_url ?? undefined,
+      photoUrl: profile.photo_url ?? undefined,
     interests,
     lookingFor,
     reason: socialCopy[locale].freshStart,

@@ -96,63 +96,63 @@ export type ChartPoint = {
 export const translations = {
   de: {
     brand: "NeuStart",
-    appLabel: "Initiative fur neue Ankommende in Deutschland",
+    appLabel: "Initiative für neue Ankommende in Deutschland",
     positioning:
-      "NeuStart hilft Menschen, in Deutschland schneller Anschluss, Unterstutzung und vertrauenswurdige lokale Kontakte zu finden.",
+      "NeuStart hilft Menschen, in Deutschland schneller Anschluss, Unterstützung und vertrauenswürdige lokale Kontakte zu finden.",
     languageSwitcherLabel: "Sprache wechseln",
     localeButtons: { de: "DE", ru: "RU" },
     topNav: {
       landing: "Startseite",
       app: "Plattform",
-      founder: "Grunderbereich",
+      founder: "Gründerbereich",
       admin: "Adminbereich",
     },
     landing: {
-      badge: "Pilotansicht fur Gemeinschaftsorganisationen",
+      badge: "Pilotansicht für Gemeinschaftsorganisationen",
       title:
         "NeuStart macht aus Ankommen wieder ein menschliches Erlebnis.",
       text:
-        "Eine mehrsprachige Plattform fur neue Ankommende in Deutschland: Freunde finden, hilfreiche Kontakte knupfen, Veranstaltungen entdecken und vertrauenswurdige Services nutzen.",
+        "Eine mehrsprachige Plattform für neue Ankommende in Deutschland: Freunde finden, hilfreiche Kontakte knüpfen, Veranstaltungen entdecken und vertrauenswürdige Services nutzen.",
       primaryCta: "Profil erstellen",
       secondaryCta: "Meine Gemeinschaft finden",
       heroNote:
-        "Kostenlos fur Nutzer. Gebaut fur Gemeinschaft, Orientierung und einen sanfteren Neustart.",
+        "Kostenlos für Nutzer. Gebaut für Gemeinschaft, Orientierung und einen sanfteren Neustart.",
       problemTitle: "Das Problem",
       problemText:
-        "Viele Menschen fuhlen sich nach dem Umzug nach Deutschland isoliert. Kontakte fehlen, lokale Informationen sind verstreut und vertrauenswurdige Hilfe ist oft schwer zu finden.",
-      solutionTitle: "Die Losung",
+        "Viele Menschen fühlen sich nach dem Umzug nach Deutschland isoliert. Kontakte fehlen, lokale Informationen sind verstreut und vertrauenswürdige Hilfe ist oft schwer zu finden.",
+      solutionTitle: "Die Lösung",
       solutionText:
-        "NeuStart verbindet Menschen mit relevanten Personen, Gemeinschaftsgruppen und verlasslichen Services in einem klaren, warmen Produktfluss.",
+        "NeuStart verbindet Menschen mit relevanten Personen, Gemeinschaftsgruppen und verlässlichen Services in einem klaren, warmen Produktfluss.",
       howTitle: "So funktioniert es",
       howSteps: [
         "Profil anlegen und deine Situation kurz beschreiben",
-        "Wochentliche Matches mit passenden Menschen erhalten",
-        "Veranstaltungen, Gemeinschaften und verlassliche Services entdecken",
+        "Wöchentliche Matches mit passenden Menschen erhalten",
+        "Veranstaltungen, Gemeinschaften und verlässliche Services entdecken",
       ],
-      newcomerTitle: "Fur neue Ankommende",
+      newcomerTitle: "Für neue Ankommende",
       newcomerText:
-        "NeuStart hilft beim ersten sozialen Netz, bei praktischen Fragen und beim Gefuhl, nicht allein anzukommen.",
-      communityTitle: "Fur Gemeinschaften",
+        "NeuStart hilft beim ersten sozialen Netz, bei praktischen Fragen und beim Gefühl, nicht allein anzukommen.",
+      communityTitle: "Für Gemeinschaften",
       communityText:
         "Teams aus Gemeinschaften sehen, wen sie unterstutzen konnen, wie Mitglieder aktiviert werden und welche Formate wirklich Resonanz erzeugen.",
-      partnerTitle: "Fur Partner",
+      partnerTitle: "Für Partner",
       partnerText:
         "Partner-Services erscheinen kontextuell dort, wo sie wirklich sinnvoll sind: Sprache, Dokumente, Alltag, Finanzen und Orientierung.",
       pilotTitle: "Pilot mit Gemeinschaftsorganisationen",
       pilotText:
-        "Die Ansicht ist auf Pilotgesprache mit Gemeinschaftsorganisationen, Integrationsinitiativen und lokalen Partnern ausgelegt.",
-      visionTitle: "Vision des Grunders",
+        "Die Ansicht ist auf Pilotgespräche mit Gemeinschaftsorganisationen, Integrationsinitiativen und lokalen Partnern ausgelegt.",
+      visionTitle: "Vision des Gründers",
       visionText:
-        "NeuStart soll zur Infrastruktur fur mehrsprachige Ankommenswege in Deutschland werden: sozial, praktisch und langfristig skalierbar.",
+        "NeuStart soll zur Infrastruktur für mehrsprachige Ankommenswege in Deutschland werden: sozial, praktisch und langfristig skalierbar.",
       finalTitle: "Gemeinsam leichter ankommen",
       finalText:
-        "Von der ersten Begegnung bis zu vertrauensvollen Services baut NeuStart eine freundlichere Infrastruktur fur das Ankommen auf.",
+        "Von der ersten Begegnung bis zu vertrauensvollen Services baut NeuStart eine freundlichere Infrastruktur für das Ankommen auf.",
     },
     app: {
       badge: "Plattformansicht",
-      title: "So fuhlt sich die NeuStart Plattform fur Nutzer an",
+      title: "So fühlt sich die NeuStart Plattform für Nutzer an",
       text:
-        "Eine mobile Produktreise mit Profil, Personenvorschlagen, wochentlichen Matches, Veranstaltungen, Kontakten und hilfreichen Services.",
+        "Eine mobile Produktreise mit Profil, Personenvorschlägen, wöchentlichen Matches, Veranstaltungen, Kontakten und hilfreichen Services.",
       bottomNav: {
         home: "Start",
         people: "Menschen",
@@ -163,7 +163,7 @@ export const translations = {
       profileCardTitle: "Profilvorschau",
       profileTitle: "Profil erstellen",
       profileText:
-        "Ein leichter Start: genug Informationen fur gute Empfehlungen, ohne den Einstieg schwer zu machen.",
+        "Ein leichter Start: genügend Informationen für gute Empfehlungen, ohne den Einstieg schwer zu machen.",
       profileFields: {
         name: "Name",
         age: "Alter",
@@ -172,7 +172,7 @@ export const translations = {
         moveYear: "Jahr des Neustarts",
         profession: "Beruf oder Fokus",
         about:
-          "Erzahle kurz, was du suchst und was dir beim Ankommen gerade am meisten helfen wurde...",
+          "Erzahle kurz, was du suchst und was dir beim Ankommen gerade am meisten helfen würde...",
       },
       profilePlaceholders: {
         name: "Zum Beispiel: Roman",
@@ -188,24 +188,24 @@ export const translations = {
       homeTitle: "Dein Neustart in einer Plattform",
       homeText:
         "Entdecke Menschen, Passungen, Veranstaltungen und hilfreiche Angebote in deiner neuen Umgebung.",
-      peopleTitle: "Menschen fur dich",
+      peopleTitle: "Menschen für dich",
       peopleText:
-        "Vorschlage nach Stadt, Sprache, Lebensphase und Motivation helfen dir, schneller echte Kontakte aufzubauen.",
-      matchesTitle: "Wochentliche Passungen",
+        "Vorschläge nach Stadt, Sprache, Lebensphase und Motivation helfen dir, schneller echte Kontakte aufzubauen.",
+      matchesTitle: "Wöchentliche Passungen",
       matchesText:
-        "Jede Woche zeigt NeuStart neue Menschen mit nachvollziehbarer Begrundung fur den Match.",
+        "Jede Woche zeigt NeuStart neue Menschen mit nachvollziehbarer Begründung für den Match.",
       contactsTitle: "Kontakte",
       contactsText:
         "Hier sammelst du Menschen, mit denen du in Kontakt bleiben oder gemeinsam ein Event besuchen willst.",
       contactsEmptyTitle: "Noch keine Kontakte",
       contactsEmptyText:
         "Speichere die ersten interessanten Menschen aus dem Bereich Menschen.",
-      eventsTitle: "Veranstaltungen in deiner Nahe",
+      eventsTitle: "Veranstaltungen in deiner Nähe",
       eventsText:
-        "Kleine Formate, sichere Begegnungen und gute erste Anlasse fur echte Gemeinschaftsmomente.",
+        "Kleine Formate, sichere Begegnungen und gute erste Anlässe für echte Gemeinschaftsmomente.",
       servicesTitle: "Hilfreiche Services",
       servicesText:
-        "Vertrauenswurdige Angebote fur Sprache, Dokumente, Familie, Finanzen und Alltag.",
+        "Vertrauensw?rdige Angebote für Sprache, Dokumente, Familie, Finanzen und Alltag.",
       weeklyConnect: "Profil ansehen",
       addToContacts: "Zu Kontakten",
       add: "🤝 Kennenlernen",
@@ -215,30 +215,30 @@ export const translations = {
       lookingForTitle: "Ich suche",
       aiTitle: "NeuStart Begleiter",
       aiText:
-        "Begleitet den Neustart mit erklarbaren Empfehlungen statt unpersonlichen Listen.",
+        "Begleitet den Neustart mit erklärbaren Empfehlungen statt unpersönlichen Listen.",
       aiBullets: [
-        "Wochentliche personliche Passungen",
-        "Hinweise fur die nachsten sinnvollen Schritte",
+        "Wöchentliche personliche Passungen",
+        "Hinweise für die nächsten sinnvollen Schritte",
         "Lokale Services und Veranstaltungen im richtigen Moment",
       ],
     },
     founder: {
-      badge: "Grunder-Dashboard",
+      badge: "Gründer-Dashboard",
       title: "Strategischer Blick auf Wachstum, Rollout der Gemeinschaft und Erlosmodell",
       text:
-        "Ein interner Dashboard-Modus fur Pilotgesprache, Rollout-Planung und die Monetarisierungsstory.",
+        "Ein interner Dashboard-Modus für Pilotgespräche, Rollout-Planung und die Monetarisierungsstory.",
       metricsTitle: "Kernmetriken",
       chartTitle: "Wachstumssignal",
       funnelTitle: "Wachstumstrichter",
       revenueTitle: "Umsatzpipeline der Partner",
-      roadmapTitle: "Startfahrplan fur Gemeinschaften",
-      notesTitle: "Notizen des Grunders",
+      roadmapTitle: "Startfahrplan für Gemeinschaften",
+      notesTitle: "Notizen des Gründers",
     },
     admin: {
       badge: "Admin-Dashboard",
-      title: "Betrieb der Gemeinschaft fur Mitglieder, Veranstaltungen und Moderation",
+      title: "Betrieb der Gemeinschaft für Mitglieder, Veranstaltungen und Moderation",
       text:
-        "Ein interner Arbeitsmodus fur Teams der Gemeinschaft mit Fokus auf Aktivierung, Sicherheit und Qualitat.",
+        "Ein interner Arbeitsmodus für Teams der Gemeinschaft mit Fokus auf Aktivierung, Sicherheit und Qualität.",
       healthTitle: "Zustand der Community",
       membersTitle: "Mitglieder",
       eventsTitle: "Anstehende Veranstaltungen",
@@ -491,7 +491,7 @@ export const peopleByLocale: Record<Locale, Person[]> = {
       profession: "Betriebsmanager",
       language: "B1",
       about:
-        "Roman baut sich in Hamburg ein neues Umfeld auf und sucht Menschen fur Alltagstipps, Arbeit und gegenseitige Unterstutzung.",
+        "Roman baut sich in Hamburg ein neues Umfeld auf und sucht Menschen für Alltagstipps, Arbeit und gegenseitige Unterstützung.",
       interests: ["Karriere", "Familie", "Netzwerken"],
       lookingFor: ["Freunde", "Karriere-Impulse", "Mentor"],
       reason: "Ahnliche Lebensphase und starker Fokus auf beruflichen Neustart.",
@@ -522,7 +522,7 @@ export const peopleByLocale: Record<Locale, Person[]> = {
         "Maksim organisiert gern kleine Treffen und mag Formate, bei denen neue Menschen ohne Druck ins Gesprach kommen.",
       interests: ["Freunde", "Netzwerken", "Gesundheit"],
       lookingFor: ["Community", "Veranstaltungen", "Freunde"],
-      reason: "Hohe Event-Aktivitat und gute Energie fur neue Kontakte.",
+      reason: "Hohe Event-Aktivitat und gute Energie für neue Kontakte.",
       status: "Antwortet schnell",
     },
   ],
@@ -594,7 +594,7 @@ export const eventsByLocale: Record<Locale, EventItem[]> = {
       date: "Dienstag, 19:00",
       format: "Offline",
       description:
-        "Ein ruhiger Abend fur neue Mitglieder mit lokalen Tipps, kleinen Intros und einem sicheren ersten Community-Moment.",
+        "Ein ruhiger Abend für neue Mitglieder mit lokalen Tipps, kleinen Intros und einem sicheren ersten Community-Moment.",
       seatsLeft: "12 Platze frei",
     },
     {
@@ -612,7 +612,7 @@ export const eventsByLocale: Record<Locale, EventItem[]> = {
       date: "Samstag, 11:00",
       format: "Offline",
       description:
-        "Ein warmes Community-Format fur Familien, Kinder und neue nachbarschaftliche Kontakte.",
+        "Ein warmes Community-Format für Familien, Kinder und neue nachbarschaftliche Kontakte.",
       seatsLeft: "18 Platze frei",
     },
   ],
@@ -654,21 +654,21 @@ export const partnersByLocale: Record<Locale, PartnerItem[]> = {
       category: "Versicherung",
       description:
         "Hilft bei Krankenkasse, Grundschutz und den ersten Schritten nach Anmeldung und Umzug.",
-      offer: "Vertrauenswurdiger Partner-Slot",
+      offer: "Vertrauensw?rdiger Partner-Slot",
     },
     {
       title: "Sprach-Sprint",
       category: "Sprache",
       description:
-        "Ein fokussiertes Format fur alltagsnahes Deutsch mit Community-Nahe und klaren Wochenzielen.",
+        "Ein fokussiertes Format für alltagsnahes Deutsch mit Community-Nähe und klaren Wochenzielen.",
       offer: "Community-Angebot mit Pilotlogik",
     },
     {
-      title: "Finanzhilfe fur den Neustart",
+      title: "Finanzhilfe für den Neustart",
       category: "Finanzen",
       description:
         "Begleitet bei Konto, Alltag und den wichtigsten finanziellen Entscheidungen der ersten Monate.",
-      offer: "Platzhalter fur Umsatzbeteiligung im Pilot",
+      offer: "Platzhalter für Umsatzbeteiligung im Pilot",
     },
   ],
   ru: [
@@ -708,7 +708,7 @@ export const servicesByLocale: Record<Locale, ServiceItem[]> = {
       title: "Семейный старт",
       subtitle: "Kinder, Schule und Familienalltag",
       detail:
-        "Praktische Hilfe fur Familien, die zwischen Behorden, Routinen und neuen sozialen Kreisen navigieren.",
+        "Praktische Hilfe für Familien, die zwischen Behörden, Routinen und neuen sozialen Kreisen navigieren.",
     },
     {
       title: "Язык и интеграция",
@@ -720,7 +720,7 @@ export const servicesByLocale: Record<Locale, ServiceItem[]> = {
       title: "Надёжные центры сообщества",
       subtitle: "Lokale Gruppen und wiederkehrende Formate",
       detail:
-        "Hilft dabei, die richtige Gruppe fur die eigene Lebensphase und Stadt zu finden.",
+        "Hilft dabei, die richtige Gruppe für die eigene Lebensphase und Stadt zu finden.",
     },
   ],
   ru: [
@@ -743,7 +743,7 @@ export const servicesByLocale: Record<Locale, ServiceItem[]> = {
         "Соединяет изучение языка с локальными сообществами, регулярными событиями и живыми знакомствами.",
     },
     {
-      title: "Vertrauenswurdige Community-Orte",
+      title: "Vertrauensw?rdige Community-Orte",
       subtitle: "Локальные группы и регулярные форматы",
       detail:
         "Помогает найти именно ту группу, которая подходит вашему этапу жизни и вашему городу.",
@@ -776,7 +776,7 @@ export const communityPipelineByLocale: Record<Locale, PipelineItem[]> = {
     {
       title: "Hamburger Startwelle",
       value: "Q3",
-      note: "Community-Partnerschaft mit Sprach- und Karrierelogik fur neue Mitglieder.",
+      note: "Community-Partnerschaft mit Sprach- und Karrierelogik für neue Mitglieder.",
     },
     {
       title: "NRW-Cluster",
@@ -808,17 +808,17 @@ export const revenueCardsByLocale: Record<Locale, StrategyCard[]> = {
     {
       title: "Ebene der Partner-Services",
       text:
-        "Kontextuelle Angebote fur Sprache, Versicherung und Alltag mit klarer Lead-Logik.",
+        "Kontextuelle Angebote für Sprache, Versicherung und Alltag mit klarer Lead-Logik.",
       tag: "Heute",
     },
     {
-      title: "Partnerschaftspakete fur Communities",
+      title: "Partnerschaftspakete für Communities",
       text:
-        "Pilot- und Co-Branding-Setups fur Organisationen, die Newcomer sozial begleiten wollen.",
+        "Pilot- und Co-Branding-Setups für Organisationen, die Newcomer sozial begleiten wollen.",
       tag: "Nach MVP",
     },
     {
-      title: "Premium-Werkzeugkasten fur Communities",
+      title: "Premium-Werkzeugkasten für Communities",
       text:
         "Admin-Automatisierung, Einblicke und Community-CRM als langfristiger Erloshebel.",
       tag: "Fahrplan",
@@ -864,8 +864,8 @@ export const adminMetricsByLocale: Record<Locale, MetricItem[]> = {
 export const adminOffersByLocale: Record<Locale, OfferItem[]> = {
   de: [
     { title: "Versicherungsbegleitung", status: "Aktiv", value: "Segment mit hoher Absicht" },
-    { title: "Sprach-Sprint", status: "In Prufung", value: "Bereit fur Community-Co-Branding" },
-    { title: "Finanzhilfe fur den Neustart", status: "In Warteschlange", value: "Test der Lead-Warteschlange" },
+    { title: "Sprach-Sprint", status: "In Prüfung", value: "Bereit für Community-Co-Branding" },
+    { title: "Finanzhilfe für den Neustart", status: "In Warteschlange", value: "Test der Lead-Warteschlange" },
   ],
   ru: [
     { title: "Помощь со страхованием", status: "Активно", value: "Сегмент с высоким намерением" },
@@ -877,7 +877,7 @@ export const adminOffersByLocale: Record<Locale, OfferItem[]> = {
 export const moderationQueueByLocale: Record<Locale, ModerationItem[]> = {
   de: [
     {
-      title: "Prufung der Profilqualitat",
+      title: "Prüfung der Profilqualitat",
       note: "5 neue Profile brauchen klarere Beschreibung oder ein besseres erstes Foto.",
       priority: "P1",
     },
@@ -887,8 +887,8 @@ export const moderationQueueByLocale: Record<Locale, ModerationItem[]> = {
       priority: "P2",
     },
     {
-      title: "Prufung sensibler Vorstellungen",
-      note: "3 Vorstellungen fur Familiengruppen erst nach kurzer Freigabe durch das Admin-Team senden.",
+      title: "Prüfung sensibler Vorstellungen",
+      note: "3 Vorstellungen für Familiengruppen erst nach kurzer Freigabe durch das Admin-Team senden.",
       priority: "P1",
     },
   ],
