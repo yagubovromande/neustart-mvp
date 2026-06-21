@@ -136,6 +136,24 @@ type FounderMetricSnapshot = {
 
 const profileRoleOptions = ["user", "manager", "admin", "founder"] as const;
 type ProfileRole = (typeof profileRoleOptions)[number];
+type FounderCommunityUpdateInput = Pick<
+  CommunityRow,
+  "name" | "description" | "city" | "language" | "category" | "cover_url"
+>;
+type FounderEventUpdateInput = Pick<
+  EventRow,
+  | "title"
+  | "description"
+  | "starts_at"
+  | "ends_at"
+  | "city"
+  | "address"
+  | "online_url"
+  | "organizer"
+  | "community_id"
+  | "cover_url"
+  | "visibility"
+>;
 
 type CommunityRow = {
   id: string;
@@ -189,6 +207,8 @@ type EventRsvpRow = {
 };
 
 const AVATAR_BUCKET = "profile-photos";
+const COMMUNITY_COVER_BUCKET = "community-covers";
+const EVENT_COVER_BUCKET = "event-covers";
 
 function getConnectionState(
   requests: ConnectionRequestRow[],
@@ -1301,6 +1321,157 @@ export default function HomePage() {
     setFounderUsersMessageTone("info");
     setFounderRoleActionUserId(null);
     setFounderRoleActionRole(null);
+  }
+
+  async function updateFounderCommunity(
+    communityId: string,
+    updates: FounderCommunityUpdateInput,
+  ): Promise<{ ok: true } | { ok: false; message: string }> {
+    const supabase = getSupabaseBrowserClient();
+
+    if (!supabase) {
+      return {
+        ok: false,
+        message: locale === "ru" ? "Supabase сейчас недоступен." : "Supabase ist gerade nicht verfügbar.",
+      };
+    }
+
+    const payload = {
+      ...updates,
+      updated_at: new Date().toISOString(),
+    };
+
+    const { error } = await supabase.from("communities").update(payload).eq("id", communityId);
+
+    if (error) {
+      warnInDevelopment("Founder community could not be updated.", error);
+      return {
+        ok: false,
+        message:
+          locale === "ru"
+            ? "Сообщество сейчас не удалось сохранить."
+            : "Die Community konnte gerade nicht gespeichert werden.",
+      };
+    }
+
+    setCommunityRows((currentRows) =>
+      currentRows.map((community) => (community.id === communityId ? { ...community, ...payload } : community)),
+    );
+
+    return { ok: true };
+  }
+
+  async function updateFounderEvent(
+    eventId: string,
+    updates: FounderEventUpdateInput,
+  ): Promise<{ ok: true } | { ok: false; message: string }> {
+    const supabase = getSupabaseBrowserClient();
+
+    if (!supabase) {
+      return {
+        ok: false,
+        message: locale === "ru" ? "Supabase сейчас недоступен." : "Supabase ist gerade nicht verfügbar.",
+      };
+    }
+
+    const payload = {
+      ...updates,
+      updated_at: new Date().toISOString(),
+    };
+
+    const { error } = await supabase.from("events").update(payload).eq("id", eventId);
+
+    if (error) {
+      warnInDevelopment("Founder event could not be updated.", error);
+      return {
+        ok: false,
+        message:
+          locale === "ru"
+            ? "Событие сейчас не удалось сохранить."
+            : "Das Event konnte gerade nicht gespeichert werden.",
+      };
+    }
+
+    setEventRows((currentRows) =>
+      currentRows.map((event) => (event.id === eventId ? { ...event, ...payload } : event)),
+    );
+
+    return { ok: true };
+  }
+
+  async function uploadFounderCover(
+    bucket: string,
+    entityId: string,
+    file: File,
+  ): Promise<{ ok: true; publicUrl: string } | { ok: false; message: string }> {
+    const supabase = getSupabaseBrowserClient();
+
+    if (!supabase || !authUser) {
+      return {
+        ok: false,
+        message:
+          locale === "ru"
+            ? "Загрузка доступна только после входа в аккаунт."
+            : "Der Upload ist erst nach der Anmeldung verfügbar.",
+      };
+    }
+
+    if (!file.type.startsWith("image/")) {
+      return {
+        ok: false,
+        message:
+          locale === "ru"
+            ? "Можно загружать только изображения."
+            : "Es können nur Bilddateien hochgeladen werden.",
+      };
+    }
+
+    const sanitizedName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
+    const storagePath = `${entityId}/${Date.now()}-${sanitizedName}`;
+
+    try {
+      const { error } = await supabase.storage.from(bucket).upload(storagePath, file, {
+        upsert: true,
+        cacheControl: "3600",
+      });
+
+      if (error) {
+        warnInDevelopment("Founder cover upload is unavailable.", error);
+        return {
+          ok: false,
+          message:
+            locale === "ru"
+              ? "Изображение пока не удалось загрузить в Storage."
+              : "Das Bild konnte gerade nicht in Storage hochgeladen werden.",
+        };
+      }
+
+      const { data } = supabase.storage.from(bucket).getPublicUrl(storagePath);
+      return { ok: true, publicUrl: data.publicUrl };
+    } catch (error) {
+      warnInDevelopment("Founder cover upload failed.", error);
+      return {
+        ok: false,
+        message:
+          locale === "ru"
+            ? "Storage сейчас недоступен для загрузки изображения."
+            : "Storage ist für den Bild-Upload gerade nicht verfügbar.",
+      };
+    }
+  }
+
+  async function uploadFounderCommunityCover(
+    communityId: string,
+    file: File,
+  ): Promise<{ ok: true; publicUrl: string } | { ok: false; message: string }> {
+    return uploadFounderCover(COMMUNITY_COVER_BUCKET, communityId, file);
+  }
+
+  async function uploadFounderEventCover(
+    eventId: string,
+    file: File,
+  ): Promise<{ ok: true; publicUrl: string } | { ok: false; message: string }> {
+    return uploadFounderCover(EVENT_COVER_BUCKET, eventId, file);
   }
 
   async function loadOwnProfile(userId: string) {
@@ -2630,6 +2801,18 @@ export default function HomePage() {
                   founderRoleActionUserId={founderRoleActionUserId}
                   founderRoleActionRole={founderRoleActionRole}
                   onUpdateFounderUserRole={updateFounderUserRole}
+                  communities={communityRows}
+                  communityMembers={communityMemberRows}
+                  communitiesLoading={communitiesLoading || communityMembersLoading}
+                  communitiesMessage={communitiesMessage}
+                  onUpdateFounderCommunity={updateFounderCommunity}
+                  onUploadFounderCommunityCover={uploadFounderCommunityCover}
+                  eventRows={eventRows}
+                  eventRsvps={eventRsvpRows}
+                  eventsLoading={eventsLoading || eventRsvpsLoading}
+                  eventsMessage={eventsMessage}
+                  onUpdateFounderEvent={updateFounderEvent}
+                  onUploadFounderEventCover={uploadFounderEventCover}
                   founderFunnel={founderFunnel}
                   founderCharts={founderCharts}
                   communityPipeline={communityPipeline}
@@ -4111,9 +4294,15 @@ function CommunityListCard({
   onLeave: () => void;
 }) {
   return (
-    <div className="rounded-[26px] border border-white/10 bg-white/[0.05] p-4 backdrop-blur-[24px]">
+    <div className="overflow-hidden rounded-[26px] border border-white/10 bg-white/[0.05] backdrop-blur-[24px]">
+      <BannerSurface
+        imageUrl={community.cover_url}
+        alt={community.name}
+        heightClassName="h-32"
+        fit="cover"
+      />
       <button onClick={onOpen} className="w-full text-left">
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start justify-between gap-3 px-4 pt-4">
           <div>
             <p className="text-lg font-semibold text-white">{community.name}</p>
             <p className="mt-1 text-xs uppercase tracking-[0.2em] text-[#8FA8D6]">
@@ -4124,12 +4313,12 @@ function CommunityListCard({
             {memberCount} {locale === "ru" ? "участ." : "Mitgl."}
           </span>
         </div>
-        <p className="mt-3 text-sm leading-6 text-[#C7D1E0]">{community.description || " "}</p>
+        <p className="mt-3 px-4 pb-4 text-sm leading-6 text-[#C7D1E0]">{community.description || " "}</p>
       </button>
       <button
         onClick={joined ? onLeave : onJoin}
         disabled={loading}
-        className={`mt-4 w-full rounded-[20px] px-4 py-3 text-sm font-medium transition-colors ${
+        className={`mx-4 mb-4 w-[calc(100%-2rem)] rounded-[20px] px-4 py-3 text-sm font-medium transition-colors ${
           joined ? "border border-white/10 bg-white/[0.05] text-white" : "bg-[#007AFF] text-white"
         }`}
       >
@@ -4173,7 +4362,14 @@ function CommunityDetailCard({
       <button onClick={onBack} className="text-sm text-[#8FA8D6]">
         {locale === "ru" ? "Назад к сообществам" : "Zurück zu den Communities"}
       </button>
-      <div className="rounded-[28px] border border-white/10 bg-white/[0.05] p-5 backdrop-blur-[24px]">
+      <div className="overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.05] backdrop-blur-[24px]">
+        <BannerSurface
+          imageUrl={community.cover_url}
+          alt={community.name}
+          heightClassName="h-40"
+          fit="cover"
+        />
+        <div className="p-5">
         <p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-[#8FA8D6]">
           {[community.city, community.language, community.category].filter(Boolean).join(" • ")}
         </p>
@@ -4208,6 +4404,7 @@ function CommunityDetailCard({
                 ? "Вступить в сообщество"
                 : "Community beitreten"}
         </button>
+        </div>
       </div>
     </div>
   );
@@ -4239,7 +4436,7 @@ function EventListCard({
   return (
     <div className="overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.05] backdrop-blur-[24px]">
       <button onClick={onOpen} className="block w-full text-left">
-        <div className="h-32 bg-[linear-gradient(135deg,rgba(0,122,255,0.35),rgba(99,102,241,0.18),rgba(255,255,255,0.06))]" />
+        <BannerSurface imageUrl={event.cover_url} alt={event.title} heightClassName="h-32" fit="cover" />
         <div className="space-y-3 p-4">
           <div className="flex items-start justify-between gap-3">
             <div>
@@ -4331,7 +4528,7 @@ function EventDetailCard({
         {locale === "ru" ? "Назад к событиям" : "Zurück zu den Events"}
       </button>
       <div className="overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.05] backdrop-blur-[24px]">
-        <div className="h-40 bg-[linear-gradient(135deg,rgba(0,122,255,0.38),rgba(99,102,241,0.2),rgba(255,255,255,0.06))]" />
+        <BannerSurface imageUrl={event.cover_url} alt={event.title} heightClassName="h-40" fit="cover" />
         <div className="space-y-4 p-5">
           <div className="flex items-start justify-between gap-3">
             <div>
@@ -4425,6 +4622,18 @@ function FounderDashboard({
   founderRoleActionUserId,
   founderRoleActionRole,
   onUpdateFounderUserRole,
+  communities,
+  communityMembers,
+  communitiesLoading,
+  communitiesMessage,
+  onUpdateFounderCommunity,
+  onUploadFounderCommunityCover,
+  eventRows,
+  eventRsvps,
+  eventsLoading,
+  eventsMessage,
+  onUpdateFounderEvent,
+  onUploadFounderEventCover,
   founderFunnel,
   founderCharts,
   communityPipeline,
@@ -4443,14 +4652,64 @@ function FounderDashboard({
   founderRoleActionUserId: string | null;
   founderRoleActionRole: ProfileRole | null;
   onUpdateFounderUserRole: (targetUserId: string, nextRole: ProfileRole) => Promise<void>;
+  communities: CommunityRow[];
+  communityMembers: CommunityMemberRow[];
+  communitiesLoading: boolean;
+  communitiesMessage: string | null;
+  onUpdateFounderCommunity: (
+    communityId: string,
+    updates: FounderCommunityUpdateInput,
+  ) => Promise<{ ok: true } | { ok: false; message: string }>;
+  onUploadFounderCommunityCover: (
+    communityId: string,
+    file: File,
+  ) => Promise<{ ok: true; publicUrl: string } | { ok: false; message: string }>;
+  eventRows: EventRow[];
+  eventRsvps: EventRsvpRow[];
+  eventsLoading: boolean;
+  eventsMessage: string | null;
+  onUpdateFounderEvent: (
+    eventId: string,
+    updates: FounderEventUpdateInput,
+  ) => Promise<{ ok: true } | { ok: false; message: string }>;
+  onUploadFounderEventCover: (
+    eventId: string,
+    file: File,
+  ) => Promise<{ ok: true; publicUrl: string } | { ok: false; message: string }>;
   founderFunnel: (typeof founderFunnelByLocale)[Locale];
   founderCharts: (typeof founderChartsByLocale)[Locale];
   communityPipeline: (typeof communityPipelineByLocale)[Locale];
   revenueCards: (typeof revenueCardsByLocale)[Locale];
 }) {
+  const [selectedFounderCommunityId, setSelectedFounderCommunityId] = useState<string | null>(null);
+  const [selectedFounderEventId, setSelectedFounderEventId] = useState<string | null>(null);
   const sortedFounderUsers = [...founderUsers].sort(
     (left, right) => new Date(right.created_at).getTime() - new Date(left.created_at).getTime(),
   );
+  const sortedCommunities = [...communities].sort(
+    (left, right) => new Date(right.created_at).getTime() - new Date(left.created_at).getTime(),
+  );
+  const memberCountByCommunityId = new Map<string, number>();
+  for (const membership of communityMembers) {
+    memberCountByCommunityId.set(
+      membership.community_id,
+      (memberCountByCommunityId.get(membership.community_id) ?? 0) + 1,
+    );
+  }
+  const communityNameById = new Map(communities.map((community) => [community.id, community.name] as const));
+  const sortedFounderEvents = [...eventRows].sort(
+    (left, right) => new Date(left.starts_at).getTime() - new Date(right.starts_at).getTime(),
+  );
+  const selectedFounderCommunity =
+    sortedCommunities.find((community) => community.id === selectedFounderCommunityId) ?? null;
+  const selectedFounderEvent =
+    sortedFounderEvents.find((event) => event.id === selectedFounderEventId) ?? null;
+  const rsvpCountByEventId = new Map<string, number>();
+  for (const rsvp of eventRsvps) {
+    if (rsvp.status === "going" || rsvp.status === "maybe") {
+      rsvpCountByEventId.set(rsvp.event_id, (rsvpCountByEventId.get(rsvp.event_id) ?? 0) + 1);
+    }
+  }
   const founderPublicMetrics = [
     {
       label: locale === "ru" ? "Всего пользователей" : "Profile insgesamt",
@@ -4582,6 +4841,107 @@ function FounderDashboard({
           </div>
         )}
       </PanelCard>
+
+      <div className="grid gap-4 xl:grid-cols-[1fr_1fr]">
+        <PanelCard title={locale === "ru" ? "Сообщества" : "Communities"}>
+          {communitiesMessage ? <InlineNote text={communitiesMessage} tone="warning" className="mb-4" /> : null}
+          <InlineNote
+            text={
+              locale === "ru"
+                ? "Founder panel использует отдельный внутренний просмотр. Редактирование, скрытие и удаление сообщества сейчас недоступны: в текущей схеме нет status/is_active, а founder update/delete policy для communities отсутствуют."
+                : "Das Founder-Panel nutzt eine separate interne Ansicht. Bearbeiten, Ausblenden und Löschen von Communities sind aktuell nicht verfügbar: Im Schema gibt es kein status/is_active, und Founder-Update/Delete-Policies für Communities fehlen."
+            }
+            className="mb-4"
+          />
+          {communitiesLoading ? (
+            <LoadingCard lines={5} />
+          ) : sortedCommunities.length === 0 ? (
+            <EmptyMobileCard
+              title={locale === "ru" ? "Сообщества пока не найдены" : "Noch keine Communities gefunden"}
+              text={
+                locale === "ru"
+                  ? "Когда сообщества появятся в базе, они отобразятся здесь."
+                  : "Sobald Communities in der Datenbank vorhanden sind, erscheinen sie hier."
+              }
+            />
+          ) : selectedFounderCommunity ? (
+            <FounderCommunityAdminPanel
+              key={selectedFounderCommunity.id}
+              locale={locale}
+              community={selectedFounderCommunity}
+              memberCount={memberCountByCommunityId.get(selectedFounderCommunity.id) ?? 0}
+              onSave={onUpdateFounderCommunity}
+              onUploadCover={onUploadFounderCommunityCover}
+              onBack={() => setSelectedFounderCommunityId(null)}
+            />
+          ) : (
+            <div className="space-y-3">
+              {sortedCommunities.map((community) => (
+                <FounderCommunityRow
+                  key={community.id}
+                  locale={locale}
+                  community={community}
+                  memberCount={memberCountByCommunityId.get(community.id) ?? 0}
+                  onOpen={() => setSelectedFounderCommunityId(community.id)}
+                />
+              ))}
+            </div>
+          )}
+        </PanelCard>
+
+        <PanelCard title={locale === "ru" ? "События" : "Events"}>
+          {eventsMessage ? <InlineNote text={eventsMessage} tone="warning" className="mb-4" /> : null}
+          <InlineNote
+            text={
+              locale === "ru"
+                ? "Founder panel использует отдельный внутренний просмотр. Редактирование, скрытие и удаление события сейчас недоступны: founder update/delete policy для events отсутствуют."
+                : "Das Founder-Panel nutzt eine separate interne Ansicht. Bearbeiten, Ausblenden und Löschen von Events sind aktuell nicht verfügbar: Founder-Update/Delete-Policies für Events fehlen."
+            }
+            className="mb-4"
+          />
+          {eventsLoading ? (
+            <LoadingCard lines={5} />
+          ) : sortedFounderEvents.length === 0 ? (
+            <EmptyMobileCard
+              title={locale === "ru" ? "События пока не найдены" : "Noch keine Events gefunden"}
+              text={
+                locale === "ru"
+                  ? "Когда события появятся в базе, они отобразятся здесь."
+                  : "Sobald Events in der Datenbank vorhanden sind, erscheinen sie hier."
+              }
+            />
+          ) : selectedFounderEvent ? (
+            <FounderEventAdminPanel
+              key={selectedFounderEvent.id}
+              locale={locale}
+              event={selectedFounderEvent}
+              communities={sortedCommunities}
+              communityName={
+                selectedFounderEvent.community_id
+                  ? communityNameById.get(selectedFounderEvent.community_id) ?? null
+                  : null
+              }
+              attendeeCount={rsvpCountByEventId.get(selectedFounderEvent.id) ?? 0}
+              onSave={onUpdateFounderEvent}
+              onUploadCover={onUploadFounderEventCover}
+              onBack={() => setSelectedFounderEventId(null)}
+            />
+          ) : (
+            <div className="space-y-3">
+              {sortedFounderEvents.map((event) => (
+                <FounderEventRow
+                  key={event.id}
+                  locale={locale}
+                  event={event}
+                  communityName={event.community_id ? communityNameById.get(event.community_id) ?? null : null}
+                  attendeeCount={rsvpCountByEventId.get(event.id) ?? 0}
+                  onOpen={() => setSelectedFounderEventId(event.id)}
+                />
+              ))}
+            </div>
+          )}
+        </PanelCard>
+      </div>
     </div>
   );
 }
@@ -6264,6 +6624,848 @@ function FounderUserMeta({
   );
 }
 
+function FounderCommunityRow({
+  locale,
+  community,
+  memberCount,
+  onOpen,
+}: {
+  locale: Locale;
+  community: CommunityRow;
+  memberCount: number;
+  onOpen: () => void;
+}) {
+  return (
+    <div className="overflow-hidden rounded-[24px] border border-white/10 bg-white/[0.05]">
+      <BannerSurface
+        imageUrl={community.cover_url}
+        alt={community.name}
+        heightClassName="h-28"
+        fit="cover"
+      />
+      <div className="p-4">
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+        <div className="space-y-3">
+          <div>
+            <h4 className="text-lg font-semibold text-white">{community.name}</h4>
+            <p className="mt-1 text-sm text-[#8A94A6]">
+              {[community.city, community.language, community.category].filter(Boolean).join(" • ") ||
+                (locale === "ru" ? "Локация не указана" : "Keine Angaben zur Location")}
+            </p>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <FounderUserMeta
+              label={locale === "ru" ? "Создано" : "Erstellt"}
+              value={formatFounderUserDate(locale, community.created_at)}
+            />
+            <FounderUserMeta
+              label={locale === "ru" ? "Участников" : "Mitglieder"}
+              value={String(memberCount)}
+            />
+            <FounderUserMeta
+              label={locale === "ru" ? "Создатель" : "Ersteller"}
+              value={community.created_by ?? (locale === "ru" ? "Не указано" : "Nicht angegeben")}
+              mono={Boolean(community.created_by)}
+            />
+            <FounderUserMeta label="ID" value={community.id} mono />
+          </div>
+        </div>
+
+        <div className="xl:max-w-[18rem]">
+          <button
+            type="button"
+            onClick={onOpen}
+            className="w-full rounded-[20px] bg-[#007AFF] px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-[#1984ff]"
+          >
+            {locale === "ru" ? "Открыть сообщество" : "Community öffnen"}
+          </button>
+        </div>
+      </div>
+      </div>
+    </div>
+  );
+}
+
+function FounderCommunityAdminPanel({
+  locale,
+  community,
+  memberCount,
+  onSave,
+  onUploadCover,
+  onBack,
+}: {
+  locale: Locale;
+  community: CommunityRow;
+  memberCount: number;
+  onSave: (
+    communityId: string,
+    updates: FounderCommunityUpdateInput,
+  ) => Promise<{ ok: true } | { ok: false; message: string }>;
+  onUploadCover: (
+    communityId: string,
+    file: File,
+  ) => Promise<{ ok: true; publicUrl: string } | { ok: false; message: string }>;
+  onBack: () => void;
+}) {
+  const [form, setForm] = useState(() => ({
+    name: community.name ?? "",
+    description: community.description ?? "",
+    city: community.city ?? "",
+    language: community.language ?? "",
+    category: community.category ?? "",
+    cover_url: community.cover_url ?? "",
+  }));
+  const [saving, setSaving] = useState(false);
+  const [feedback, setFeedback] = useState<{ tone: "info" | "warning"; text: string } | null>(null);
+  const [uploadingCover, setUploadingCover] = useState(false);
+  const [uploadFeedback, setUploadFeedback] = useState<{ tone: "info" | "warning"; text: string } | null>(null);
+
+  async function handleSave() {
+    setSaving(true);
+    setFeedback(null);
+
+    const result = await onSave(community.id, {
+      name: form.name.trim(),
+      description: form.description.trim(),
+      city: form.city.trim(),
+      language: form.language.trim(),
+      category: form.category.trim(),
+      cover_url: form.cover_url.trim() ? form.cover_url.trim() : null,
+    });
+
+    if (!result.ok) {
+      setFeedback({ tone: "warning", text: result.message });
+      setSaving(false);
+      return;
+    }
+
+    setFeedback({
+      tone: "info",
+      text: locale === "ru" ? "Сообщество сохранено." : "Die Community wurde gespeichert.",
+    });
+    setSaving(false);
+  }
+
+  async function handleCoverUpload(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    setUploadingCover(true);
+    setUploadFeedback(null);
+
+    const result = await onUploadCover(community.id, file);
+
+    if (!result.ok) {
+      setUploadFeedback({ tone: "warning", text: result.message });
+      setUploadingCover(false);
+      event.target.value = "";
+      return;
+    }
+
+    setForm((current) => ({ ...current, cover_url: result.publicUrl }));
+    setUploadFeedback({
+      tone: "info",
+      text:
+        locale === "ru"
+          ? "Баннер загружен. Нажмите сохранить, чтобы закрепить его за сообществом."
+          : "Das Banner wurde hochgeladen. Klicke auf Speichern, um es für die Community zu übernehmen.",
+    });
+    setUploadingCover(false);
+    event.target.value = "";
+  }
+
+  return (
+    <div className="space-y-4">
+      <button onClick={onBack} className="text-sm text-[#8FA8D6]">
+        {locale === "ru" ? "Назад к списку сообществ" : "Zurück zur Community-Liste"}
+      </button>
+
+      <div className="overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.05] backdrop-blur-[24px]">
+        <BannerSurface
+          imageUrl={form.cover_url.trim() ? form.cover_url : null}
+          alt={community.name}
+          heightClassName="h-40"
+          fit="contain"
+          dark
+        />
+
+        <div className="space-y-4 p-5">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-[#8FA8D6]">
+              {locale === "ru" ? "Founder Community Panel" : "Founder Community Panel"}
+            </p>
+            <h3 className="mt-3 text-2xl font-semibold tracking-[-0.04em] text-white">{community.name}</h3>
+            <p className="mt-2 text-sm text-[#8A94A6]">
+              {[community.city, community.language, community.category].filter(Boolean).join(" • ") ||
+                (locale === "ru" ? "Локация не указана" : "Keine Angaben zur Location")}
+            </p>
+          </div>
+
+          <InlineNote
+            text={
+              locale === "ru"
+                ? "Сообщество можно редактировать и сохранять прямо здесь. Hide / deactivate / delete не добавлены: в текущей схеме нет status/is_active, а delete не входит в этот шаг."
+                : "Die Community kann direkt hier bearbeitet und gespeichert werden. Hide / deactivate / delete sind nicht enthalten: Im aktuellen Schema gibt es kein status/is_active, und delete gehört nicht zu diesem Schritt."
+            }
+            tone="info"
+          />
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <FounderUserMeta
+              label={locale === "ru" ? "Создано" : "Erstellt"}
+              value={formatFounderUserDate(locale, community.created_at)}
+            />
+            <FounderUserMeta
+              label={locale === "ru" ? "Обновлено" : "Aktualisiert"}
+              value={formatFounderUserDate(locale, community.updated_at)}
+            />
+            <FounderUserMeta
+              label={locale === "ru" ? "Создатель" : "Ersteller"}
+              value={community.created_by ?? (locale === "ru" ? "Не указано" : "Nicht angegeben")}
+              mono={Boolean(community.created_by)}
+            />
+            <FounderUserMeta
+              label={locale === "ru" ? "Участников" : "Mitglieder"}
+              value={String(memberCount)}
+            />
+            <FounderUserMeta
+              label={locale === "ru" ? "Slug" : "Slug"}
+              value={community.slug ?? (locale === "ru" ? "Не указано" : "Nicht angegeben")}
+              mono={Boolean(community.slug)}
+            />
+            <FounderUserMeta label="ID" value={community.id} mono />
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <FounderField
+              label={locale === "ru" ? "Название" : "Name"}
+              value={form.name}
+              onChange={(value) => setForm((current) => ({ ...current, name: value }))}
+            />
+            <FounderField
+              label={locale === "ru" ? "Город" : "Stadt"}
+              value={form.city}
+              onChange={(value) => setForm((current) => ({ ...current, city: value }))}
+            />
+            <FounderField
+              label={locale === "ru" ? "Язык" : "Sprache"}
+              value={form.language}
+              onChange={(value) => setForm((current) => ({ ...current, language: value }))}
+            />
+            <FounderField
+              label={locale === "ru" ? "Категория" : "Kategorie"}
+              value={form.category}
+              onChange={(value) => setForm((current) => ({ ...current, category: value }))}
+            />
+          </div>
+
+          <FounderTextarea
+            label={locale === "ru" ? "Описание" : "Beschreibung"}
+            value={form.description}
+            onChange={(value) => setForm((current) => ({ ...current, description: value }))}
+            rows={5}
+          />
+
+          <FounderField
+            label={locale === "ru" ? "Banner URL (опционально)" : "Banner-URL (optional)"}
+            value={form.cover_url}
+            onChange={(value) => setForm((current) => ({ ...current, cover_url: value }))}
+            placeholder="https://..."
+          />
+
+          <div className="rounded-[20px] border border-white/10 bg-white/[0.04] p-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-medium text-white">
+                  {locale === "ru" ? "Загрузка баннера" : "Banner-Upload"}
+                </p>
+                <p className="mt-1 text-xs text-[#8A94A6]">
+                  {locale === "ru"
+                    ? "Загрузите изображение в bucket community-covers. После загрузки нажмите сохранить."
+                    : "Lade ein Bild in den Bucket community-covers hoch. Klicke danach auf Speichern."}
+                </p>
+              </div>
+              <label className="inline-flex cursor-pointer items-center justify-center rounded-[18px] border border-white/10 bg-white/[0.05] px-4 py-3 text-sm font-medium text-white transition-colors hover:border-[#007AFF]/30 hover:bg-white/[0.08]">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(event) => void handleCoverUpload(event)}
+                  className="hidden"
+                />
+                {uploadingCover
+                  ? locale === "ru"
+                    ? "Загружаем..."
+                    : "Wird hochgeladen..."
+                  : form.cover_url.trim()
+                    ? locale === "ru"
+                      ? "Заменить баннер"
+                      : "Banner ersetzen"
+                    : locale === "ru"
+                      ? "Загрузить баннер"
+                      : "Banner hochladen"}
+              </label>
+            </div>
+          </div>
+
+          {form.cover_url.trim() ? (
+            <BannerPreviewCard imageUrl={form.cover_url} alt={community.name} />
+          ) : null}
+
+          {uploadFeedback ? (
+            <InlineNote text={uploadFeedback.text} tone={uploadFeedback.tone} />
+          ) : null}
+
+          {feedback ? (
+            <InlineNote text={feedback.text} tone={feedback.tone} />
+          ) : null}
+
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={() => void handleSave()}
+              disabled={saving || !form.name.trim()}
+              className="rounded-[20px] bg-[#007AFF] px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-[#1984ff] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {saving
+                ? locale === "ru"
+                  ? "Сохраняем..."
+                  : "Speichern..."
+                : locale === "ru"
+                  ? "Сохранить сообщество"
+                  : "Community speichern"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FounderEventRow({
+  locale,
+  event,
+  communityName,
+  attendeeCount,
+  onOpen,
+}: {
+  locale: Locale;
+  event: EventRow;
+  communityName: string | null;
+  attendeeCount: number;
+  onOpen: () => void;
+}) {
+  return (
+    <div className="overflow-hidden rounded-[24px] border border-white/10 bg-white/[0.05]">
+      <BannerSurface imageUrl={event.cover_url} alt={event.title} heightClassName="h-28" fit="cover" />
+      <div className="p-4">
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+        <div className="space-y-3">
+          <div>
+            <h4 className="text-lg font-semibold text-white">{event.title}</h4>
+            <p className="mt-1 text-sm text-[#8A94A6]">{formatEventDateRange(locale, event.starts_at, event.ends_at)}</p>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <FounderUserMeta
+              label={locale === "ru" ? "Локация" : "Ort"}
+              value={formatEventLocation(locale, event.city, event.address, event.online_url)}
+            />
+            <FounderUserMeta
+              label={locale === "ru" ? "Сообщество" : "Community"}
+              value={
+                communityName ??
+                event.community_id ??
+                (locale === "ru" ? "Не привязано" : "Nicht verknüpft")
+              }
+              mono={!communityName && Boolean(event.community_id)}
+            />
+            <FounderUserMeta
+              label={locale === "ru" ? "Организатор / Creator" : "Organisator / Creator"}
+              value={event.organizer?.trim() || event.created_by || (locale === "ru" ? "Не указано" : "Nicht angegeben")}
+              mono={!event.organizer?.trim() && Boolean(event.created_by)}
+            />
+            <FounderUserMeta
+              label={locale === "ru" ? "Участников" : "Teilnehmende"}
+              value={String(attendeeCount)}
+            />
+          </div>
+        </div>
+
+        <div className="xl:max-w-[18rem]">
+          <button
+            type="button"
+            onClick={onOpen}
+            className="w-full rounded-[20px] bg-[#007AFF] px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-[#1984ff]"
+          >
+            {locale === "ru" ? "Открыть событие" : "Event öffnen"}
+          </button>
+        </div>
+      </div>
+      </div>
+    </div>
+  );
+}
+
+function FounderEventAdminPanel({
+  locale,
+  event,
+  communities,
+  communityName,
+  attendeeCount,
+  onSave,
+  onUploadCover,
+  onBack,
+}: {
+  locale: Locale;
+  event: EventRow;
+  communities: CommunityRow[];
+  communityName: string | null;
+  attendeeCount: number;
+  onSave: (
+    eventId: string,
+    updates: FounderEventUpdateInput,
+  ) => Promise<{ ok: true } | { ok: false; message: string }>;
+  onUploadCover: (
+    eventId: string,
+    file: File,
+  ) => Promise<{ ok: true; publicUrl: string } | { ok: false; message: string }>;
+  onBack: () => void;
+}) {
+  const visibilityOptions = Array.from(new Set(["public", "private", event.visibility].filter(Boolean)));
+  const [form, setForm] = useState(() => ({
+    title: event.title ?? "",
+    description: event.description ?? "",
+    starts_at: toDateTimeLocalValue(event.starts_at),
+    ends_at: event.ends_at ? toDateTimeLocalValue(event.ends_at) : "",
+    city: event.city ?? "",
+    address: event.address ?? "",
+    online_url: event.online_url ?? "",
+    organizer: event.organizer ?? "",
+    community_id: event.community_id ?? "",
+    cover_url: event.cover_url ?? "",
+    visibility: event.visibility ?? "public",
+  }));
+  const [saving, setSaving] = useState(false);
+  const [feedback, setFeedback] = useState<{ tone: "info" | "warning"; text: string } | null>(null);
+  const [uploadingCover, setUploadingCover] = useState(false);
+  const [uploadFeedback, setUploadFeedback] = useState<{ tone: "info" | "warning"; text: string } | null>(null);
+
+  async function handleSave() {
+    setSaving(true);
+    setFeedback(null);
+
+    const result = await onSave(event.id, {
+      title: form.title.trim(),
+      description: form.description.trim(),
+      starts_at: fromDateTimeLocalValue(form.starts_at),
+      ends_at: form.ends_at ? fromDateTimeLocalValue(form.ends_at) : null,
+      city: form.city.trim() || null,
+      address: form.address.trim() || null,
+      online_url: form.online_url.trim() || null,
+      organizer: form.organizer.trim() || null,
+      community_id: form.community_id || null,
+      cover_url: form.cover_url.trim() || null,
+      visibility: form.visibility,
+    });
+
+    if (!result.ok) {
+      setFeedback({ tone: "warning", text: result.message });
+      setSaving(false);
+      return;
+    }
+
+    setFeedback({
+      tone: "info",
+      text:
+        locale === "ru"
+          ? "Событие сохранено. Если visibility изменена на private, после полной перезагрузки оно может исчезнуть из текущей founder-ленты из-за действующей select policy."
+          : "Das Event wurde gespeichert. Wenn visibility auf private geändert wurde, kann es nach einem kompletten Reload wegen der aktuellen Select-Policy aus der Founder-Liste verschwinden.",
+    });
+    setSaving(false);
+  }
+
+  async function handleCoverUpload(eventInput: ChangeEvent<HTMLInputElement>) {
+    const file = eventInput.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    setUploadingCover(true);
+    setUploadFeedback(null);
+
+    const result = await onUploadCover(event.id, file);
+
+    if (!result.ok) {
+      setUploadFeedback({ tone: "warning", text: result.message });
+      setUploadingCover(false);
+      eventInput.target.value = "";
+      return;
+    }
+
+    setForm((current) => ({ ...current, cover_url: result.publicUrl }));
+    setUploadFeedback({
+      tone: "info",
+      text:
+        locale === "ru"
+          ? "Баннер загружен. Нажмите сохранить, чтобы закрепить его за событием."
+          : "Das Banner wurde hochgeladen. Klicke auf Speichern, um es für das Event zu übernehmen.",
+    });
+    setUploadingCover(false);
+    eventInput.target.value = "";
+  }
+
+  return (
+    <div className="space-y-4">
+      <button onClick={onBack} className="text-sm text-[#8FA8D6]">
+        {locale === "ru" ? "Назад к списку событий" : "Zurück zur Event-Liste"}
+      </button>
+
+      <div className="overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.05] backdrop-blur-[24px]">
+        <BannerSurface
+          imageUrl={form.cover_url.trim() ? form.cover_url : null}
+          alt={event.title}
+          heightClassName="h-44"
+          fit="contain"
+          dark
+        />
+
+        <div className="space-y-4 p-5">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-[#8FA8D6]">
+              {locale === "ru" ? "Founder Event Panel" : "Founder Event Panel"}
+            </p>
+            <h3 className="mt-3 text-2xl font-semibold tracking-[-0.04em] text-white">{event.title}</h3>
+            <p className="mt-2 text-sm text-[#8A94A6]">{formatEventDateRange(locale, event.starts_at, event.ends_at)}</p>
+          </div>
+
+          <InlineNote
+            text={
+              locale === "ru"
+                ? "Событие можно редактировать и сохранять прямо здесь. Delete не добавлен в этот шаг. Поле visibility редактируется, но текущая select policy по-прежнему показывает только public events после полной перезагрузки."
+                : "Das Event kann direkt hier bearbeitet und gespeichert werden. Delete ist in diesem Schritt nicht enthalten. Das Feld visibility ist editierbar, aber die aktuelle Select-Policy zeigt nach einem kompletten Reload weiterhin nur public Events."
+            }
+            tone="info"
+          />
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <FounderUserMeta
+              label={locale === "ru" ? "Дата и время" : "Datum und Zeit"}
+              value={formatEventDateRange(locale, event.starts_at, event.ends_at)}
+            />
+            <FounderUserMeta
+              label={locale === "ru" ? "Локация" : "Ort"}
+              value={formatEventLocation(locale, event.city, event.address, event.online_url)}
+            />
+            <FounderUserMeta
+              label={locale === "ru" ? "Сообщество" : "Community"}
+              value={
+                communityName ??
+                event.community_id ??
+                (locale === "ru" ? "Не привязано" : "Nicht verknüpft")
+              }
+              mono={!communityName && Boolean(event.community_id)}
+            />
+            <FounderUserMeta
+              label={locale === "ru" ? "Организатор" : "Organisator"}
+              value={event.organizer?.trim() || (locale === "ru" ? "Не указано" : "Nicht angegeben")}
+            />
+            <FounderUserMeta
+              label={locale === "ru" ? "Creator ID" : "Creator-ID"}
+              value={event.created_by ?? (locale === "ru" ? "Не указано" : "Nicht angegeben")}
+              mono={Boolean(event.created_by)}
+            />
+            <FounderUserMeta
+              label={locale === "ru" ? "Участников" : "Teilnehmende"}
+              value={String(attendeeCount)}
+            />
+            <FounderUserMeta
+              label={locale === "ru" ? "Создано" : "Erstellt"}
+              value={formatFounderUserDate(locale, event.created_at)}
+            />
+            <FounderUserMeta
+              label={locale === "ru" ? "Обновлено" : "Aktualisiert"}
+              value={formatFounderUserDate(locale, event.updated_at)}
+            />
+            <FounderUserMeta label="ID" value={event.id} mono />
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <FounderField
+              label={locale === "ru" ? "Название" : "Titel"}
+              value={form.title}
+              onChange={(value) => setForm((current) => ({ ...current, title: value }))}
+            />
+            <FounderSelect
+              label={locale === "ru" ? "Visibility" : "Visibility"}
+              value={form.visibility}
+              onChange={(value) => setForm((current) => ({ ...current, visibility: value }))}
+              options={visibilityOptions.map((value) => ({
+                value,
+                label: value,
+              }))}
+            />
+            <FounderField
+              label={locale === "ru" ? "Начало" : "Start"}
+              value={form.starts_at}
+              onChange={(value) => setForm((current) => ({ ...current, starts_at: value }))}
+              type="datetime-local"
+            />
+            <FounderField
+              label={locale === "ru" ? "Окончание" : "Ende"}
+              value={form.ends_at}
+              onChange={(value) => setForm((current) => ({ ...current, ends_at: value }))}
+              type="datetime-local"
+            />
+            <FounderField
+              label={locale === "ru" ? "Город" : "Stadt"}
+              value={form.city}
+              onChange={(value) => setForm((current) => ({ ...current, city: value }))}
+            />
+            <FounderField
+              label={locale === "ru" ? "Адрес" : "Adresse"}
+              value={form.address}
+              onChange={(value) => setForm((current) => ({ ...current, address: value }))}
+            />
+            <FounderField
+              label={locale === "ru" ? "Онлайн URL" : "Online-URL"}
+              value={form.online_url}
+              onChange={(value) => setForm((current) => ({ ...current, online_url: value }))}
+              placeholder="https://..."
+            />
+            <FounderField
+              label={locale === "ru" ? "Организатор" : "Organisator"}
+              value={form.organizer}
+              onChange={(value) => setForm((current) => ({ ...current, organizer: value }))}
+            />
+            <FounderSelect
+              label={locale === "ru" ? "Сообщество" : "Community"}
+              value={form.community_id}
+              onChange={(value) => setForm((current) => ({ ...current, community_id: value }))}
+              options={[
+                {
+                  value: "",
+                  label: locale === "ru" ? "Без сообщества" : "Ohne Community",
+                },
+                ...communities.map((communityOption) => ({
+                  value: communityOption.id,
+                  label: communityOption.name,
+                })),
+              ]}
+            />
+            <FounderField
+              label={locale === "ru" ? "Banner URL (опционально)" : "Banner-URL (optional)"}
+              value={form.cover_url}
+              onChange={(value) => setForm((current) => ({ ...current, cover_url: value }))}
+              placeholder="https://..."
+            />
+          </div>
+
+          <div className="rounded-[20px] border border-white/10 bg-white/[0.04] p-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-medium text-white">
+                  {locale === "ru" ? "Загрузка баннера" : "Banner-Upload"}
+                </p>
+                <p className="mt-1 text-xs text-[#8A94A6]">
+                  {locale === "ru"
+                    ? "Загрузите изображение в bucket event-covers. После загрузки нажмите сохранить."
+                    : "Lade ein Bild in den Bucket event-covers hoch. Klicke danach auf Speichern."}
+                </p>
+              </div>
+              <label className="inline-flex cursor-pointer items-center justify-center rounded-[18px] border border-white/10 bg-white/[0.05] px-4 py-3 text-sm font-medium text-white transition-colors hover:border-[#007AFF]/30 hover:bg-white/[0.08]">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(eventInput) => void handleCoverUpload(eventInput)}
+                  className="hidden"
+                />
+                {uploadingCover
+                  ? locale === "ru"
+                    ? "Загружаем..."
+                    : "Wird hochgeladen..."
+                  : form.cover_url.trim()
+                    ? locale === "ru"
+                      ? "Заменить баннер"
+                      : "Banner ersetzen"
+                    : locale === "ru"
+                      ? "Загрузить баннер"
+                      : "Banner hochladen"}
+              </label>
+            </div>
+          </div>
+
+          <FounderTextarea
+            label={locale === "ru" ? "Описание" : "Beschreibung"}
+            value={form.description}
+            onChange={(value) => setForm((current) => ({ ...current, description: value }))}
+            rows={5}
+          />
+
+          {form.cover_url.trim() ? (
+            <BannerPreviewCard imageUrl={form.cover_url} alt={event.title} />
+          ) : null}
+
+          {uploadFeedback ? (
+            <InlineNote text={uploadFeedback.text} tone={uploadFeedback.tone} />
+          ) : null}
+
+          {feedback ? (
+            <InlineNote text={feedback.text} tone={feedback.tone} />
+          ) : null}
+
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={() => void handleSave()}
+              disabled={saving || !form.title.trim() || !form.starts_at}
+              className="rounded-[20px] bg-[#007AFF] px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-[#1984ff] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {saving
+                ? locale === "ru"
+                  ? "Сохраняем..."
+                  : "Speichern..."
+                : locale === "ru"
+                  ? "Сохранить событие"
+                  : "Event speichern"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FounderField({
+  label,
+  value,
+  onChange,
+  placeholder,
+  type = "text",
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  type?: string;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-sm font-medium text-white">{label}</span>
+      <input
+        type={type}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        className="w-full rounded-[20px] border border-white/10 bg-white/[0.05] p-4 text-sm text-white outline-none placeholder:text-[#6F7B90] focus:border-[#007AFF] focus:bg-white/[0.08]"
+      />
+    </label>
+  );
+}
+
+function FounderTextarea({
+  label,
+  value,
+  onChange,
+  rows = 4,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  rows?: number;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-sm font-medium text-white">{label}</span>
+      <textarea
+        rows={rows}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="w-full rounded-[20px] border border-white/10 bg-white/[0.05] p-4 text-sm text-white outline-none placeholder:text-[#6F7B90] focus:border-[#007AFF] focus:bg-white/[0.08]"
+      />
+    </label>
+  );
+}
+
+function FounderSelect({
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: Array<{ value: string; label: string }>;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-sm font-medium text-white">{label}</span>
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="w-full rounded-[20px] border border-white/10 bg-[#0b1220] p-4 text-sm text-white outline-none focus:border-[#007AFF]"
+      >
+        {options.map((option) => (
+          <option key={`${option.value}-${option.label}`} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+}
+
+function BannerSurface({
+  imageUrl,
+  alt,
+  heightClassName,
+  fit,
+  dark = false,
+}: {
+  imageUrl: string | null;
+  alt: string;
+  heightClassName: string;
+  fit: "contain" | "cover";
+  dark?: boolean;
+}) {
+  if (!imageUrl?.trim()) {
+    return (
+      <div
+        className={`${heightClassName} bg-[linear-gradient(135deg,rgba(0,122,255,0.35),rgba(99,102,241,0.18),rgba(255,255,255,0.06))]`}
+      />
+    );
+  }
+
+  return (
+    <div
+      className={`${heightClassName} flex items-center justify-center overflow-hidden ${
+        dark ? "bg-[rgba(5,10,20,0.9)]" : "bg-[rgba(255,255,255,0.04)]"
+      }`}
+    >
+      <img
+        src={imageUrl}
+        alt={alt}
+        className={`h-full w-full ${fit === "contain" ? "object-contain" : "object-cover"}`}
+      />
+    </div>
+  );
+}
+
+function BannerPreviewCard({ imageUrl, alt }: { imageUrl: string; alt: string }) {
+  return (
+    <div className="overflow-hidden rounded-[20px] border border-white/10 bg-[rgba(5,10,20,0.9)]">
+      <div className="flex h-48 items-center justify-center">
+        <img src={imageUrl} alt={alt} className="h-full w-full object-contain" />
+      </div>
+    </div>
+  );
+}
+
 function ChartCard({
   title,
   points,
@@ -6579,6 +7781,17 @@ function formatFounderUserDate(locale: Locale, value: string) {
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(value));
+}
+
+function toDateTimeLocalValue(value: string) {
+  const date = new Date(value);
+  const offset = date.getTimezoneOffset();
+  const localDate = new Date(date.getTime() - offset * 60_000);
+  return localDate.toISOString().slice(0, 16);
+}
+
+function fromDateTimeLocalValue(value: string) {
+  return new Date(value).toISOString();
 }
 
 function isProfileRole(role: string | null | undefined): role is ProfileRole {
