@@ -321,6 +321,8 @@ function resetAuthStateCache() {
   authStateCache.sessionChecked = false;
 }
 
+const communityAdminRoleNames = new Set(["owner", "admin", "manager", "community_admin"]);
+
 function getRouteState(pathname: string | null): {
   area: ProductArea;
   screen: AppScreen;
@@ -654,6 +656,7 @@ export default function HomePage() {
   const [clientPathname, setClientPathname] = useState(pathname ?? "/");
   const initialRoute = getRouteState(clientPathname);
   const routeState = getRouteState(clientPathname);
+  const currentArea = routeState.area;
   const isAuthRoute = clientPathname === "/auth";
   const isProfileRoute = clientPathname === "/profile";
   const isPeopleRoute = clientPathname === "/people";
@@ -679,7 +682,6 @@ export default function HomePage() {
     isChatRoute ||
     isAppRoute;
   const [locale, setLocale] = useState<Locale>(appUiCache.locale);
-  const [area, setArea] = useState<ProductArea>(initialRoute.area);
   const [appScreen, setAppScreen] = useState<AppScreen>(initialRoute.screen);
   const [pendingStandaloneScreen, setPendingStandaloneScreen] = useState<AppScreen | null>(null);
   const [selectedPersonId, setSelectedPersonId] = useState(1);
@@ -780,8 +782,18 @@ export default function HomePage() {
   const adminMetrics = adminMetricsByLocale[locale];
   const adminOffers = adminOffersByLocale[locale];
   const moderationQueue = moderationQueueByLocale[locale];
-  const hasFounderAccess = currentProfile?.role === "founder";
-  const hasFounderOrAdminAccess = currentProfile?.role === "founder" || currentProfile?.role === "admin";
+  const hasFounderAccess = currentProfile?.role === "founder" || currentProfile?.role === "admin";
+  const hasFounderOrAdminAccess = hasFounderAccess;
+  const canAccessCommunityAdmin =
+    Boolean(authUser) &&
+    (
+      hasFounderOrAdminAccess ||
+      communityRows.some((community) => community.created_by === authUser?.id) ||
+      communityMemberRows.some(
+        (membership) =>
+          membership.user_id === authUser?.id && communityAdminRoleNames.has(membership.role),
+      )
+    );
   const selectedPerson =
     appPeople.find((person) => person.id === selectedPersonId) ?? appPeople[0];
   const incomingRequests = connectionRequests.filter(
@@ -855,6 +867,44 @@ export default function HomePage() {
     if (process.env.NODE_ENV !== "production") {
       console.warn(message, error);
     }
+  }
+
+  function resetAuthenticatedClientState() {
+    resetAuthStateCache();
+    resetAuthenticatedUiCache();
+    setAuthUser(null);
+    setAuthSessionLoading(false);
+    setCurrentProfile(null);
+    setProfileLookupComplete(false);
+    setProfilesLoaded(false);
+    setProfilesLoading(isSupabaseConfigured);
+    setProfileForm(emptyProfileForm);
+    setProfilePhotoPreview("");
+    setProfileSaving(false);
+    setProfileMessage(null);
+    setConnectionRequests([]);
+    setRequestsLoaded(false);
+    setRequestsLoading(isSupabaseConfigured);
+    setRequestsMessage(null);
+    setRequestModalPerson(null);
+    setRequestDraft("");
+    setRequestSending(false);
+    setRequestModalMode("compose");
+    setNotifications([]);
+    setNotificationsLoading(false);
+    setChatThreads([]);
+    setChatsLoading(isSupabaseConfigured);
+    setChatMessages([]);
+    setChatLoading(false);
+    setChatMessage("");
+    setChatFeedback(null);
+    setSelectedPersonId(1);
+    setSelectedCommunityId(null);
+    setSelectedEventId(null);
+    setEventFeedTab("upcoming");
+    setPersonDetailOpen(false);
+    setPendingStandaloneScreen(null);
+    pendingStandalonePathRef.current = null;
   }
 
   useEffect(() => {
@@ -956,15 +1006,7 @@ export default function HomePage() {
       setAuthSessionLoading(false);
 
       if (!nextUser) {
-        resetAuthStateCache();
-        resetAuthenticatedUiCache();
-        setCurrentProfile(null);
-        setProfileLookupComplete(false);
-        setProfileForm(emptyProfileForm);
-        setProfilePhotoPreview("");
-        setConnectionRequests([]);
-        setNotifications([]);
-        setChatThreads([]);
+        resetAuthenticatedClientState();
       }
     });
 
@@ -980,15 +1022,7 @@ export default function HomePage() {
       setAuthSessionLoading(false);
 
       if (!nextUser) {
-        resetAuthStateCache();
-        resetAuthenticatedUiCache();
-        setCurrentProfile(null);
-        setProfileLookupComplete(false);
-        setProfileForm(emptyProfileForm);
-        setProfilePhotoPreview("");
-        setConnectionRequests([]);
-        setNotifications([]);
-        setChatThreads([]);
+        resetAuthenticatedClientState();
       }
     });
 
@@ -1011,8 +1045,9 @@ export default function HomePage() {
       return;
     }
 
-    if (!authUser) {
-      if (
+    if (
+      !authUser &&
+      (
         isProfileRoute ||
         isPeopleRoute ||
         isCommunitiesRoute ||
@@ -1024,9 +1059,9 @@ export default function HomePage() {
         isRequestsRoute ||
         isChatRoute ||
         isAppRoute
-      ) {
-        replaceClientPath("/auth");
-      }
+      )
+    ) {
+      replaceClientPath("/auth");
     }
   }, [
     authSessionLoading,
@@ -1061,6 +1096,30 @@ export default function HomePage() {
       replaceClientPath("/profile");
     }
   }, [authSessionLoading, authUser, currentProfile, isAppRoute, profileLookupComplete]);
+
+  useEffect(() => {
+    if (!isSupabaseConfigured || authSessionLoading || !authUser || !profileLookupComplete) {
+      return;
+    }
+
+    if (isFounderRoute && !hasFounderAccess) {
+      replaceClientPath("/app");
+      return;
+    }
+
+    if ((isCommunityAdminRoute || isAdminRoute) && !canAccessCommunityAdmin) {
+      replaceClientPath("/app");
+    }
+  }, [
+    authSessionLoading,
+    authUser,
+    canAccessCommunityAdmin,
+    hasFounderAccess,
+    isAdminRoute,
+    isCommunityAdminRoute,
+    isFounderRoute,
+    profileLookupComplete,
+  ]);
 
   useEffect(() => {
     if (!isSupabaseConfigured || !authUser) {
@@ -1122,7 +1181,6 @@ export default function HomePage() {
     const nextPath = getRoutePath(screen);
     pendingStandalonePathRef.current = nextPath;
     setPendingStandaloneScreen(screen);
-    setArea("app");
     setAppScreen(screen);
     setPersonDetailOpen(false);
     replaceClientPath(nextPath);
@@ -1131,12 +1189,10 @@ export default function HomePage() {
   function openAuth() {
     pendingStandalonePathRef.current = "/auth";
     setPendingStandaloneScreen(null);
-    setArea("landing");
     replaceClientPath("/auth");
   }
 
   function openArea(nextArea: ProductArea) {
-    setArea(nextArea);
     setPersonDetailOpen(false);
 
     if (nextArea === "landing") {
@@ -1154,13 +1210,19 @@ export default function HomePage() {
   }
 
   function openFounderArea() {
-    setArea("founder");
+    if (!hasFounderAccess) {
+      return;
+    }
+
     setPersonDetailOpen(false);
     replaceClientPath("/founder");
   }
 
   function openCommunityAdminArea() {
-    setArea("admin");
+    if (!canAccessCommunityAdmin) {
+      return;
+    }
+
     setPersonDetailOpen(false);
     replaceClientPath("/community-admin");
   }
@@ -2037,7 +2099,6 @@ export default function HomePage() {
   function openRequests() {
     pendingStandalonePathRef.current = "/requests";
     setPendingStandaloneScreen("requests");
-    setArea("app");
     setAppScreen("requests");
     setPersonDetailOpen(false);
     replaceClientPath("/requests");
@@ -2047,7 +2108,6 @@ export default function HomePage() {
     const nextPath = `/chat/${encodeURIComponent(partnerUserId)}`;
     pendingStandalonePathRef.current = nextPath;
     setPendingStandaloneScreen("chat");
-    setArea("app");
     setAppScreen("chat");
     setPersonDetailOpen(false);
     replaceClientPath(nextPath);
@@ -2310,6 +2370,8 @@ export default function HomePage() {
     const supabase = getSupabaseBrowserClient();
 
     if (!supabase) {
+      resetAuthenticatedClientState();
+      replaceClientPath("/");
       return;
     }
 
@@ -2326,15 +2388,7 @@ export default function HomePage() {
     }
 
     setAuthMessage(social.logoutSuccess);
-    resetAuthStateCache();
-    resetAuthenticatedUiCache();
-    setCurrentProfile(null);
-    setProfileLookupComplete(false);
-    setProfileForm(emptyProfileForm);
-    setProfilePhotoPreview("");
-    setConnectionRequests([]);
-    setNotifications([]);
-    setChatThreads([]);
+    resetAuthenticatedClientState();
     setAuthLoading(false);
     replaceClientPath("/");
   }
@@ -2478,7 +2532,7 @@ export default function HomePage() {
     }
   }
 
-  if (area === "landing") {
+  if (currentArea === "landing") {
     if (isAuthRoute) {
       return (
         <AuthExperience
@@ -2524,7 +2578,7 @@ export default function HomePage() {
     );
   }
 
-  if (area === "app" && isStandaloneUserRoute) {
+  if (currentArea === "app" && isStandaloneUserRoute) {
     if (authSessionLoading) {
       return (
         <AuthenticatedShell
@@ -2534,12 +2588,36 @@ export default function HomePage() {
           avatarUrl={currentProfile?.photo_url ?? profileForm.photoUrl}
           onSetLocale={setLocale}
           onLogout={handleLogout}
+          showFounderLink={hasFounderAccess}
+          showCommunityAdminLink={canAccessCommunityAdmin}
+          onOpenFounder={openFounderArea}
+          onOpenCommunityAdmin={openCommunityAdminArea}
         >
           <div className="mx-auto w-full max-w-[430px] space-y-4">
             <LoadingCard lines={4} />
             <LoadingCard lines={3} />
           </div>
         </AuthenticatedShell>
+      );
+    }
+
+    if (!authUser) {
+      return (
+        <AuthExperience
+          locale={locale}
+          social={social}
+          authSessionLoading={authSessionLoading}
+          authMode={authMode}
+          setAuthMode={setAuthMode}
+          authEmail={authEmail}
+          setAuthEmail={setAuthEmail}
+          authPassword={authPassword}
+          setAuthPassword={setAuthPassword}
+          authLoading={authLoading}
+          authMessage={authMessage}
+          onAuthSubmit={handleAuthSubmit}
+          onSetLocale={setLocale}
+        />
       );
     }
 
@@ -2551,6 +2629,10 @@ export default function HomePage() {
         avatarUrl={currentProfile?.photo_url ?? profileForm.photoUrl}
         onSetLocale={setLocale}
         onLogout={handleLogout}
+        showFounderLink={hasFounderAccess}
+        showCommunityAdminLink={canAccessCommunityAdmin}
+        onOpenFounder={openFounderArea}
+        onOpenCommunityAdmin={openCommunityAdminArea}
       >
         <AppExperience
           t={t}
@@ -2698,19 +2780,19 @@ export default function HomePage() {
                 />
                 <TopTab
                   label={t.topNav.app}
-                  active={area === "app" && !isCommunityAdminRoute}
+                  active={currentArea === "app" && !isCommunityAdminRoute}
                   icon={topNavIcons.app}
                   onClick={() => openArea("app")}
                 />
                 {hasFounderOrAdminAccess ? (
                   <TopTab
                     label={t.topNav.founder}
-                    active={area === "founder"}
+                    active={currentArea === "founder"}
                     icon={topNavIcons.founder}
                     onClick={openFounderArea}
                   />
                 ) : null}
-                {authUser ? (
+                {canAccessCommunityAdmin ? (
                   <TopTab
                     label={locale === "ru" ? "Админ сообщества" : "Community Admin"}
                     active={isCommunityAdminRoute}
@@ -2723,7 +2805,7 @@ export default function HomePage() {
           </header>
 
           <section className="px-4 pb-8 pt-5 sm:px-6 lg:px-8">
-            {area === "app" && (
+            {currentArea === "app" && (
               <AppExperience
                 t={t}
                 screen={appScreen}
@@ -2810,7 +2892,7 @@ export default function HomePage() {
               />
             )}
 
-            {area === "founder" && (
+            {currentArea === "founder" && (
               authSessionLoading || (authUser && !profileLookupComplete) ? (
                 <div className="space-y-4">
                   <LoadingCard lines={4} />
@@ -2886,7 +2968,7 @@ export default function HomePage() {
               )
             )}
 
-            {area === "admin" && (
+            {currentArea === "admin" && (
               isCommunityAdminRoute ? null : (
               <AdminDashboard
                 t={t}
@@ -3131,6 +3213,10 @@ function AuthenticatedShell({
   avatarUrl,
   onSetLocale,
   onLogout,
+  showFounderLink = false,
+  showCommunityAdminLink = false,
+  onOpenFounder,
+  onOpenCommunityAdmin,
   children,
 }: {
   locale: Locale;
@@ -3139,6 +3225,10 @@ function AuthenticatedShell({
   avatarUrl?: string | null;
   onSetLocale: (locale: Locale) => void;
   onLogout: () => Promise<void>;
+  showFounderLink?: boolean;
+  showCommunityAdminLink?: boolean;
+  onOpenFounder?: () => void;
+  onOpenCommunityAdmin?: () => void;
   children: ReactNode;
 }) {
   return (
@@ -3164,6 +3254,24 @@ function AuthenticatedShell({
             </div>
 
             <div className="flex flex-wrap items-center gap-3 sm:justify-end">
+              {showFounderLink && onOpenFounder ? (
+                <button
+                  onClick={onOpenFounder}
+                  className="inline-flex min-h-[40px] items-center justify-center rounded-full border border-white/10 bg-white/[0.05] px-3 py-2 text-xs font-medium text-white"
+                >
+                  {locale === "ru" ? "Основатель" : "Founder"}
+                </button>
+              ) : null}
+
+              {showCommunityAdminLink && onOpenCommunityAdmin ? (
+                <button
+                  onClick={onOpenCommunityAdmin}
+                  className="inline-flex min-h-[40px] items-center justify-center rounded-full border border-white/10 bg-white/[0.05] px-3 py-2 text-xs font-medium text-white"
+                >
+                  {locale === "ru" ? "Админ сообщества" : "Community Admin"}
+                </button>
+              ) : null}
+
               <div
                 className="flex h-9 items-center rounded-full border border-white/10 bg-white/[0.06] p-1 text-[11px] font-medium"
                 aria-label={locale === "ru" ? "Переключить язык" : "Sprache wechseln"}
@@ -5060,7 +5168,6 @@ function CommunityAdminDashboard({
   );
 
   const hasPlatformAdminAccess = currentProfile?.role === "founder" || currentProfile?.role === "admin";
-  const manageableRoleNames = new Set(["owner", "admin", "manager", "community_admin"]);
   const manageableCommunityIds = new Set<string>();
 
   for (const community of communities) {
@@ -5070,7 +5177,7 @@ function CommunityAdminDashboard({
   }
 
   for (const membership of communityMembers) {
-    if (membership.user_id === authUser.id && manageableRoleNames.has(membership.role)) {
+    if (membership.user_id === authUser.id && communityAdminRoleNames.has(membership.role)) {
       manageableCommunityIds.add(membership.community_id);
     }
   }
