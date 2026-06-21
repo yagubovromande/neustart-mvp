@@ -357,6 +357,10 @@ function getRouteState(pathname: string | null): {
     return { area: "founder", screen: "home" };
   }
 
+  if (pathname === "/community-admin") {
+    return { area: "admin", screen: "home" };
+  }
+
   if (pathname === "/admin") {
     return { area: "admin", screen: "home" };
   }
@@ -657,6 +661,7 @@ export default function HomePage() {
   const isEventsRoute = clientPathname === "/events";
   const isContactsRoute = clientPathname === "/contacts";
   const isFounderRoute = clientPathname === "/founder";
+  const isCommunityAdminRoute = clientPathname === "/community-admin";
   const isAdminRoute = clientPathname === "/admin";
   const isRequestsRoute = clientPathname === "/requests";
   const chatRouteUserId =
@@ -776,6 +781,7 @@ export default function HomePage() {
   const adminOffers = adminOffersByLocale[locale];
   const moderationQueue = moderationQueueByLocale[locale];
   const hasFounderAccess = currentProfile?.role === "founder";
+  const hasFounderOrAdminAccess = currentProfile?.role === "founder" || currentProfile?.role === "admin";
   const selectedPerson =
     appPeople.find((person) => person.id === selectedPersonId) ?? appPeople[0];
   const incomingRequests = connectionRequests.filter(
@@ -1013,6 +1019,7 @@ export default function HomePage() {
         isEventsRoute ||
         isContactsRoute ||
         isFounderRoute ||
+        isCommunityAdminRoute ||
         isAdminRoute ||
         isRequestsRoute ||
         isChatRoute ||
@@ -1029,6 +1036,7 @@ export default function HomePage() {
     isCommunitiesRoute,
     isContactsRoute,
     isFounderRoute,
+    isCommunityAdminRoute,
     isAdminRoute,
     isEventsRoute,
     isPeopleRoute,
@@ -1143,6 +1151,18 @@ export default function HomePage() {
       setPendingStandaloneScreen("home");
       replaceClientPath("/app");
     }
+  }
+
+  function openFounderArea() {
+    setArea("founder");
+    setPersonDetailOpen(false);
+    replaceClientPath("/founder");
+  }
+
+  function openCommunityAdminArea() {
+    setArea("admin");
+    setPersonDetailOpen(false);
+    replaceClientPath("/community-admin");
   }
 
   function buildProfilePayload(photoUrlOverride?: string) {
@@ -1619,7 +1639,6 @@ export default function HomePage() {
     const { data, error } = await supabase
       .from("events")
       .select("*")
-      .eq("visibility", "public")
       .order("starts_at", { ascending: true });
 
     if (error) {
@@ -2671,15 +2690,34 @@ export default function HomePage() {
 
             {!isStandaloneUserRoute && (
               <div className="mt-4 flex flex-wrap items-center gap-2 overflow-x-auto">
-                {(["landing", "app", "founder", "admin"] as const).map((item) => (
+                <TopTab
+                  label={t.topNav.landing}
+                  active={clientPathname === "/"}
+                  icon={topNavIcons.landing}
+                  onClick={() => openArea("landing")}
+                />
+                <TopTab
+                  label={t.topNav.app}
+                  active={area === "app" && !isCommunityAdminRoute}
+                  icon={topNavIcons.app}
+                  onClick={() => openArea("app")}
+                />
+                {hasFounderOrAdminAccess ? (
                   <TopTab
-                    key={item}
-                    label={t.topNav[item]}
-                    active={area === item}
-                    icon={topNavIcons[item]}
-                    onClick={() => openArea(item)}
+                    label={t.topNav.founder}
+                    active={area === "founder"}
+                    icon={topNavIcons.founder}
+                    onClick={openFounderArea}
                   />
-                ))}
+                ) : null}
+                {authUser ? (
+                  <TopTab
+                    label={locale === "ru" ? "Админ сообщества" : "Community Admin"}
+                    active={isCommunityAdminRoute}
+                    icon={topNavIcons.admin}
+                    onClick={openCommunityAdminArea}
+                  />
+                ) : null}
               </div>
             )}
           </header>
@@ -2821,7 +2859,35 @@ export default function HomePage() {
               )
             )}
 
+            {isCommunityAdminRoute && (
+              authSessionLoading || (authUser && !profileLookupComplete) ? (
+                <div className="space-y-4">
+                  <LoadingCard lines={4} />
+                  <LoadingCard lines={3} />
+                </div>
+              ) : !authUser ? null : (
+                <CommunityAdminDashboard
+                  locale={locale}
+                  currentProfile={currentProfile}
+                  authUser={authUser}
+                  communities={communityRows}
+                  communityMembers={communityMemberRows}
+                  events={eventRows}
+                  eventRsvps={eventRsvpRows}
+                  communitiesLoading={communitiesLoading || communityMembersLoading}
+                  communitiesMessage={communitiesMessage}
+                  eventsLoading={eventsLoading || eventRsvpsLoading}
+                  eventsMessage={eventsMessage}
+                  onUpdateCommunity={updateFounderCommunity}
+                  onUpdateEvent={updateFounderEvent}
+                  onUploadCommunityCover={uploadFounderCommunityCover}
+                  onUploadEventCover={uploadFounderEventCover}
+                />
+              )
+            )}
+
             {area === "admin" && (
+              isCommunityAdminRoute ? null : (
               <AdminDashboard
                 t={t}
                 locale={locale}
@@ -2831,6 +2897,7 @@ export default function HomePage() {
                 adminOffers={adminOffers}
                 moderationQueue={moderationQueue}
               />
+              )
             )}
           </section>
 
@@ -4946,6 +5013,289 @@ function FounderDashboard({
   );
 }
 
+function CommunityAdminDashboard({
+  locale,
+  currentProfile,
+  authUser,
+  communities,
+  communityMembers,
+  events,
+  eventRsvps,
+  communitiesLoading,
+  communitiesMessage,
+  eventsLoading,
+  eventsMessage,
+  onUpdateCommunity,
+  onUpdateEvent,
+  onUploadCommunityCover,
+  onUploadEventCover,
+}: {
+  locale: Locale;
+  currentProfile: ProfileRow | null;
+  authUser: User;
+  communities: CommunityRow[];
+  communityMembers: CommunityMemberRow[];
+  events: EventRow[];
+  eventRsvps: EventRsvpRow[];
+  communitiesLoading: boolean;
+  communitiesMessage: string | null;
+  eventsLoading: boolean;
+  eventsMessage: string | null;
+  onUpdateCommunity: (
+    communityId: string,
+    updates: FounderCommunityUpdateInput,
+  ) => Promise<{ ok: true } | { ok: false; message: string }>;
+  onUpdateEvent: (
+    eventId: string,
+    updates: FounderEventUpdateInput,
+  ) => Promise<{ ok: true } | { ok: false; message: string }>;
+  onUploadCommunityCover: (
+    communityId: string,
+    file: File,
+  ) => Promise<{ ok: true; publicUrl: string } | { ok: false; message: string }>;
+  onUploadEventCover: (
+    eventId: string,
+    file: File,
+  ) => Promise<{ ok: true; publicUrl: string } | { ok: false; message: string }>;
+}) {
+  const [selectedCommunityId, setSelectedCommunityId] = useState<string | null>(null);
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const [createEventFeedback, setCreateEventFeedback] = useState<{ tone: "info" | "warning"; text: string } | null>(
+    null,
+  );
+
+  const hasPlatformAdminAccess = currentProfile?.role === "founder" || currentProfile?.role === "admin";
+  const manageableRoleNames = new Set(["owner", "admin", "manager", "community_admin"]);
+  const manageableCommunityIds = new Set<string>();
+
+  for (const community of communities) {
+    if (hasPlatformAdminAccess || community.created_by === authUser.id) {
+      manageableCommunityIds.add(community.id);
+    }
+  }
+
+  for (const membership of communityMembers) {
+    if (membership.user_id === authUser.id && manageableRoleNames.has(membership.role)) {
+      manageableCommunityIds.add(membership.community_id);
+    }
+  }
+
+  const manageableCommunities = communities.filter((community) => manageableCommunityIds.has(community.id));
+  const effectiveSelectedCommunity =
+    manageableCommunities.find((community) => community.id === selectedCommunityId) ?? manageableCommunities[0] ?? null;
+  const manageableCommunityMemberRows = communityMembers.filter((membership) =>
+    effectiveSelectedCommunity ? membership.community_id === effectiveSelectedCommunity.id : false,
+  );
+  const manageableEvents = events.filter((event) =>
+    effectiveSelectedCommunity ? event.community_id === effectiveSelectedCommunity.id : false,
+  );
+  const selectedEvent = manageableEvents.find((event) => event.id === selectedEventId) ?? manageableEvents[0] ?? null;
+  const memberCount = manageableCommunityMemberRows.length;
+  const eventCount = manageableEvents.length;
+  const attendeeCountByEventId = new Map<string, number>();
+  for (const rsvp of eventRsvps) {
+    if (rsvp.status === "going" || rsvp.status === "maybe") {
+      attendeeCountByEventId.set(rsvp.event_id, (attendeeCountByEventId.get(rsvp.event_id) ?? 0) + 1);
+    }
+  }
+
+  const canPersistCommunityOrEvent = hasPlatformAdminAccess;
+  const canCreateEvent = false;
+  const readOnlyMessage =
+    locale === "ru"
+      ? "Вы видите только свои сообщества. Сохранение для owner/manager пока заблокировано: нужны отдельные update policies для communities/events."
+      : "Du siehst nur deine Communities. Speichern ist für Owner/Manager derzeit blockiert: Es werden eigene Update-Policies für Communities/Events benötigt.";
+
+  return (
+    <div className="space-y-6 lg:space-y-8">
+      <SectionIntro
+        badge={locale === "ru" ? "Админ сообщества" : "Community Admin"}
+        title={locale === "ru" ? "Управление сообществом" : "Community-Verwaltung"}
+        text={
+          locale === "ru"
+            ? "Здесь можно работать только со своими сообществами и их событиями, без доступа ко всей платформе."
+            : "Hier arbeitest du nur mit deinen Communities und deren Events, ohne Zugriff auf die gesamte Plattform."
+        }
+      />
+
+      {communitiesMessage ? <InlineNote text={communitiesMessage} tone="warning" /> : null}
+      {eventsMessage ? <InlineNote text={eventsMessage} tone="warning" /> : null}
+
+      {communitiesLoading ? (
+        <div className="space-y-4">
+          <LoadingCard lines={4} />
+          <LoadingCard lines={4} />
+        </div>
+      ) : manageableCommunities.length === 0 ? (
+        <PanelCard title={locale === "ru" ? "Нет управляемых сообществ" : "Keine verwaltbaren Communities"}>
+          <p className="text-sm leading-7 text-[#C7D1E0]">
+            {locale === "ru"
+              ? "Для этого аккаунта не найдено сообществ, которыми можно управлять. Нужна роль creator, owner, admin или manager в community_members, либо глобальная founder/admin роль."
+              : "Für dieses Konto wurden keine Communities gefunden, die verwaltet werden können. Benötigt wird creator, owner, admin oder manager in community_members oder eine globale Founder/Admin-Rolle."}
+          </p>
+        </PanelCard>
+      ) : (
+        <>
+          <div className="grid gap-4 md:grid-cols-3">
+            <MetricCard
+              value={String(manageableCommunities.length)}
+              label={locale === "ru" ? "Моих сообществ" : "Meine Communities"}
+              delta={locale === "ru" ? "Только доступные вам" : "Nur für dich verfügbar"}
+            />
+            <MetricCard
+              value={String(memberCount)}
+              label={locale === "ru" ? "Участников в выбранном" : "Mitglieder in der Auswahl"}
+              delta={locale === "ru" ? "Текущий срез" : "Aktueller Stand"}
+            />
+            <MetricCard
+              value={String(eventCount)}
+              label={locale === "ru" ? "Событий в выбранном" : "Events in der Auswahl"}
+              delta={
+                locale === "ru"
+                  ? "Сейчас загружены только события, доступные текущим policy"
+                  : "Aktuell werden nur Events geladen, die die aktuellen Policies erlauben"
+              }
+            />
+          </div>
+
+          {manageableCommunities.length > 1 ? (
+            <PanelCard title={locale === "ru" ? "Мои сообщества" : "Meine Communities"}>
+              <div className="flex flex-wrap gap-2">
+                {manageableCommunities.map((community) => (
+                  <SegmentedPill
+                    key={community.id}
+                    active={effectiveSelectedCommunity?.id === community.id}
+                    label={community.name}
+                    onClick={() => {
+                      setSelectedCommunityId(community.id);
+                      setSelectedEventId(null);
+                      setCreateEventFeedback(null);
+                    }}
+                  />
+                ))}
+              </div>
+            </PanelCard>
+          ) : null}
+
+          {effectiveSelectedCommunity ? (
+            <FounderCommunityAdminPanel
+              key={`community-admin-${effectiveSelectedCommunity.id}`}
+              locale={locale}
+              community={effectiveSelectedCommunity}
+              memberCount={memberCount}
+              onSave={onUpdateCommunity}
+              onUploadCover={onUploadCommunityCover}
+              editable={canPersistCommunityOrEvent}
+              helperMessage={canPersistCommunityOrEvent ? undefined : readOnlyMessage}
+              panelLabel={locale === "ru" ? "Панель сообщества" : "Community Panel"}
+              panelTitle={locale === "ru" ? "Редактирование сообщества" : "Community bearbeiten"}
+            />
+          ) : null}
+
+          <PanelCard title={locale === "ru" ? "События сообщества" : "Community-Events"}>
+            <InlineNote
+              text={
+                canPersistCommunityOrEvent
+                  ? locale === "ru"
+                    ? "Founder/Admin может редактировать события выбранного сообщества. Создание нового события пока отключено: для insert на public.events не хватает отдельной policy."
+                    : "Founder/Admin kann Events der ausgewählten Community bearbeiten. Das Erstellen neuer Events ist derzeit deaktiviert: Für insert auf public.events fehlt eine eigene Policy."
+                  : locale === "ru"
+                    ? "Вы видите только события выбранного сообщества. Для owner/manager редактирование и создание требуют дополнительных policies."
+                    : "Du siehst nur Events der ausgewählten Community. Für Owner/Manager erfordern Bearbeiten und Erstellen zusätzliche Policies."
+              }
+              tone="info"
+              className="mb-4"
+            />
+
+            <div className="rounded-[24px] border border-white/10 bg-white/[0.05] p-5">
+              <h4 className="text-lg font-semibold text-white">
+                {locale === "ru" ? "Создать новое событие" : "Neues Event erstellen"}
+              </h4>
+              <p className="mt-2 text-sm leading-7 text-[#A8B6CB]">
+                {locale === "ru"
+                  ? "Форма создания появится здесь после добавления insert policy для community admins/founder/admin."
+                  : "Das Erstellungsformular erscheint hier, sobald eine Insert-Policy für Community Admins/Founder/Admin vorhanden ist."}
+              </p>
+              {createEventFeedback ? (
+                <div className="mt-4">
+                  <InlineNote text={createEventFeedback.text} tone={createEventFeedback.tone} />
+                </div>
+              ) : null}
+              <div className="mt-4 flex justify-end">
+                <button
+                  type="button"
+                  disabled={!canCreateEvent}
+                  onClick={() =>
+                    setCreateEventFeedback({
+                      tone: "warning",
+                      text:
+                        locale === "ru"
+                          ? "Создание события отключено: в текущем проекте нет insert policy для public.events."
+                          : "Das Erstellen von Events ist deaktiviert: Im aktuellen Projekt gibt es keine Insert-Policy für public.events.",
+                    })
+                  }
+                  className="rounded-[20px] bg-[#007AFF] px-5 py-3 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {locale === "ru" ? "Создать событие" : "Event erstellen"}
+                </button>
+              </div>
+            </div>
+
+            {eventsLoading ? (
+              <div className="mt-4">
+                <LoadingCard lines={5} />
+              </div>
+            ) : manageableEvents.length === 0 ? (
+              <div className="mt-4">
+                <EmptyMobileCard
+                  title={locale === "ru" ? "Событий пока нет" : "Noch keine Events"}
+                  text={
+                    locale === "ru"
+                      ? "Как только у выбранного сообщества появятся доступные события, они отобразятся здесь."
+                      : "Sobald für die ausgewählte Community verfügbare Events vorhanden sind, erscheinen sie hier."
+                  }
+                />
+              </div>
+            ) : (
+              <div className="mt-4 grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
+                <div className="space-y-3">
+                  {manageableEvents.map((event) => (
+                    <FounderEventRow
+                      key={event.id}
+                      locale={locale}
+                      event={event}
+                      communityName={effectiveSelectedCommunity.name}
+                      attendeeCount={attendeeCountByEventId.get(event.id) ?? 0}
+                      onOpen={() => setSelectedEventId(event.id)}
+                    />
+                  ))}
+                </div>
+                {selectedEvent ? (
+                  <FounderEventAdminPanel
+                    key={`community-admin-event-${selectedEvent.id}`}
+                    locale={locale}
+                    event={selectedEvent}
+                    communities={manageableCommunities}
+                    communityName={effectiveSelectedCommunity.name}
+                    attendeeCount={attendeeCountByEventId.get(selectedEvent.id) ?? 0}
+                    onSave={onUpdateEvent}
+                    onUploadCover={onUploadEventCover}
+                    onBack={() => setSelectedEventId(null)}
+                    editable={canPersistCommunityOrEvent}
+                    helperMessage={canPersistCommunityOrEvent ? undefined : readOnlyMessage}
+                    panelLabel={locale === "ru" ? "События сообщества" : "Community-Events"}
+                    panelTitle={locale === "ru" ? "Редактирование события" : "Event bearbeiten"}
+                  />
+                ) : null}
+              </div>
+            )}
+          </PanelCard>
+        </>
+      )}
+    </div>
+  );
+}
+
 function AdminDashboard({
   t,
   locale,
@@ -6694,6 +7044,10 @@ function FounderCommunityAdminPanel({
   onSave,
   onUploadCover,
   onBack,
+  editable = true,
+  helperMessage,
+  panelLabel,
+  panelTitle,
 }: {
   locale: Locale;
   community: CommunityRow;
@@ -6706,7 +7060,11 @@ function FounderCommunityAdminPanel({
     communityId: string,
     file: File,
   ) => Promise<{ ok: true; publicUrl: string } | { ok: false; message: string }>;
-  onBack: () => void;
+  onBack?: () => void;
+  editable?: boolean;
+  helperMessage?: string;
+  panelLabel?: string;
+  panelTitle?: string;
 }) {
   const [form, setForm] = useState(() => ({
     name: community.name ?? "",
@@ -6780,9 +7138,11 @@ function FounderCommunityAdminPanel({
 
   return (
     <div className="space-y-4">
-      <button onClick={onBack} className="text-sm text-[#8FA8D6]">
-        {locale === "ru" ? "Назад к списку сообществ" : "Zurück zur Community-Liste"}
-      </button>
+      {onBack ? (
+        <button onClick={onBack} className="text-sm text-[#8FA8D6]">
+          {locale === "ru" ? "Назад к списку сообществ" : "Zurück zur Community-Liste"}
+        </button>
+      ) : null}
 
       <div className="overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.05] backdrop-blur-[24px]">
         <BannerSurface
@@ -6796,9 +7156,11 @@ function FounderCommunityAdminPanel({
         <div className="space-y-4 p-5">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-[#8FA8D6]">
-              {locale === "ru" ? "Founder Community Panel" : "Founder Community Panel"}
+              {panelLabel ?? (locale === "ru" ? "Founder Community Panel" : "Founder Community Panel")}
             </p>
-            <h3 className="mt-3 text-2xl font-semibold tracking-[-0.04em] text-white">{community.name}</h3>
+            <h3 className="mt-3 text-2xl font-semibold tracking-[-0.04em] text-white">
+              {panelTitle ?? community.name}
+            </h3>
             <p className="mt-2 text-sm text-[#8A94A6]">
               {[community.city, community.language, community.category].filter(Boolean).join(" • ") ||
                 (locale === "ru" ? "Локация не указана" : "Keine Angaben zur Location")}
@@ -6808,8 +7170,8 @@ function FounderCommunityAdminPanel({
           <InlineNote
             text={
               locale === "ru"
-                ? "Сообщество можно редактировать и сохранять прямо здесь. Hide / deactivate / delete не добавлены: в текущей схеме нет status/is_active, а delete не входит в этот шаг."
-                : "Die Community kann direkt hier bearbeitet und gespeichert werden. Hide / deactivate / delete sind nicht enthalten: Im aktuellen Schema gibt es kein status/is_active, und delete gehört nicht zu diesem Schritt."
+                ? helperMessage ?? "Сообщество можно редактировать и сохранять прямо здесь. Hide / deactivate / delete не добавлены: в текущей схеме нет status/is_active, а delete не входит в этот шаг."
+                : helperMessage ?? "Die Community kann direkt hier bearbeitet und gespeichert werden. Hide / deactivate / delete sind nicht enthalten: Im aktuellen Schema gibt es kein status/is_active, und delete gehört nicht zu diesem Schritt."
             }
             tone="info"
           />
@@ -6845,21 +7207,25 @@ function FounderCommunityAdminPanel({
               label={locale === "ru" ? "Название" : "Name"}
               value={form.name}
               onChange={(value) => setForm((current) => ({ ...current, name: value }))}
+              disabled={!editable}
             />
             <FounderField
               label={locale === "ru" ? "Город" : "Stadt"}
               value={form.city}
               onChange={(value) => setForm((current) => ({ ...current, city: value }))}
+              disabled={!editable}
             />
             <FounderField
               label={locale === "ru" ? "Язык" : "Sprache"}
               value={form.language}
               onChange={(value) => setForm((current) => ({ ...current, language: value }))}
+              disabled={!editable}
             />
             <FounderField
               label={locale === "ru" ? "Категория" : "Kategorie"}
               value={form.category}
               onChange={(value) => setForm((current) => ({ ...current, category: value }))}
+              disabled={!editable}
             />
           </div>
 
@@ -6868,6 +7234,7 @@ function FounderCommunityAdminPanel({
             value={form.description}
             onChange={(value) => setForm((current) => ({ ...current, description: value }))}
             rows={5}
+            disabled={!editable}
           />
 
           <FounderField
@@ -6875,6 +7242,7 @@ function FounderCommunityAdminPanel({
             value={form.cover_url}
             onChange={(value) => setForm((current) => ({ ...current, cover_url: value }))}
             placeholder="https://..."
+            disabled={!editable}
           />
 
           <div className="rounded-[20px] border border-white/10 bg-white/[0.04] p-4">
@@ -6895,6 +7263,7 @@ function FounderCommunityAdminPanel({
                   accept="image/*"
                   onChange={(event) => void handleCoverUpload(event)}
                   className="hidden"
+                  disabled={!editable}
                 />
                 {uploadingCover
                   ? locale === "ru"
@@ -6924,19 +7293,23 @@ function FounderCommunityAdminPanel({
           ) : null}
 
           <div className="flex justify-end">
-            <button
+                <button
               type="button"
               onClick={() => void handleSave()}
-              disabled={saving || !form.name.trim()}
+              disabled={!editable || saving || !form.name.trim()}
               className="rounded-[20px] bg-[#007AFF] px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-[#1984ff] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {saving
                 ? locale === "ru"
                   ? "Сохраняем..."
                   : "Speichern..."
-                : locale === "ru"
-                  ? "Сохранить сообщество"
-                  : "Community speichern"}
+                : !editable
+                  ? locale === "ru"
+                    ? "Сохранение недоступно"
+                    : "Speichern nicht verfügbar"
+                  : locale === "ru"
+                    ? "Сохранить сообщество"
+                    : "Community speichern"}
             </button>
           </div>
         </div>
@@ -7019,6 +7392,10 @@ function FounderEventAdminPanel({
   onSave,
   onUploadCover,
   onBack,
+  editable = true,
+  helperMessage,
+  panelLabel,
+  panelTitle,
 }: {
   locale: Locale;
   event: EventRow;
@@ -7033,7 +7410,11 @@ function FounderEventAdminPanel({
     eventId: string,
     file: File,
   ) => Promise<{ ok: true; publicUrl: string } | { ok: false; message: string }>;
-  onBack: () => void;
+  onBack?: () => void;
+  editable?: boolean;
+  helperMessage?: string;
+  panelLabel?: string;
+  panelTitle?: string;
 }) {
   const visibilityOptions = Array.from(new Set(["public", "private", event.visibility].filter(Boolean)));
   const [form, setForm] = useState(() => ({
@@ -7121,9 +7502,11 @@ function FounderEventAdminPanel({
 
   return (
     <div className="space-y-4">
-      <button onClick={onBack} className="text-sm text-[#8FA8D6]">
-        {locale === "ru" ? "Назад к списку событий" : "Zurück zur Event-Liste"}
-      </button>
+      {onBack ? (
+        <button onClick={onBack} className="text-sm text-[#8FA8D6]">
+          {locale === "ru" ? "Назад к списку событий" : "Zurück zur Event-Liste"}
+        </button>
+      ) : null}
 
       <div className="overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.05] backdrop-blur-[24px]">
         <BannerSurface
@@ -7137,17 +7520,19 @@ function FounderEventAdminPanel({
         <div className="space-y-4 p-5">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-[#8FA8D6]">
-              {locale === "ru" ? "Founder Event Panel" : "Founder Event Panel"}
+              {panelLabel ?? (locale === "ru" ? "Founder Event Panel" : "Founder Event Panel")}
             </p>
-            <h3 className="mt-3 text-2xl font-semibold tracking-[-0.04em] text-white">{event.title}</h3>
+            <h3 className="mt-3 text-2xl font-semibold tracking-[-0.04em] text-white">
+              {panelTitle ?? event.title}
+            </h3>
             <p className="mt-2 text-sm text-[#8A94A6]">{formatEventDateRange(locale, event.starts_at, event.ends_at)}</p>
           </div>
 
           <InlineNote
             text={
               locale === "ru"
-                ? "Событие можно редактировать и сохранять прямо здесь. Delete не добавлен в этот шаг. Поле visibility редактируется, но текущая select policy по-прежнему показывает только public events после полной перезагрузки."
-                : "Das Event kann direkt hier bearbeitet und gespeichert werden. Delete ist in diesem Schritt nicht enthalten. Das Feld visibility ist editierbar, aber die aktuelle Select-Policy zeigt nach einem kompletten Reload weiterhin nur public Events."
+                ? helperMessage ?? "Событие можно редактировать и сохранять прямо здесь. Delete не добавлен в этот шаг. Поле visibility редактируется, но текущая select policy по-прежнему показывает только public events после полной перезагрузки."
+                : helperMessage ?? "Das Event kann direkt hier bearbeitet und gespeichert werden. Delete ist in diesem Schritt nicht enthalten. Das Feld visibility ist editierbar, aber die aktuelle Select-Policy zeigt nach einem kompletten Reload weiterhin nur public Events."
             }
             tone="info"
           />
@@ -7199,6 +7584,7 @@ function FounderEventAdminPanel({
               label={locale === "ru" ? "Название" : "Titel"}
               value={form.title}
               onChange={(value) => setForm((current) => ({ ...current, title: value }))}
+              disabled={!editable}
             />
             <FounderSelect
               label={locale === "ru" ? "Visibility" : "Visibility"}
@@ -7208,39 +7594,46 @@ function FounderEventAdminPanel({
                 value,
                 label: value,
               }))}
+              disabled={!editable}
             />
             <FounderField
               label={locale === "ru" ? "Начало" : "Start"}
               value={form.starts_at}
               onChange={(value) => setForm((current) => ({ ...current, starts_at: value }))}
               type="datetime-local"
+              disabled={!editable}
             />
             <FounderField
               label={locale === "ru" ? "Окончание" : "Ende"}
               value={form.ends_at}
               onChange={(value) => setForm((current) => ({ ...current, ends_at: value }))}
               type="datetime-local"
+              disabled={!editable}
             />
             <FounderField
               label={locale === "ru" ? "Город" : "Stadt"}
               value={form.city}
               onChange={(value) => setForm((current) => ({ ...current, city: value }))}
+              disabled={!editable}
             />
             <FounderField
               label={locale === "ru" ? "Адрес" : "Adresse"}
               value={form.address}
               onChange={(value) => setForm((current) => ({ ...current, address: value }))}
+              disabled={!editable}
             />
             <FounderField
               label={locale === "ru" ? "Онлайн URL" : "Online-URL"}
               value={form.online_url}
               onChange={(value) => setForm((current) => ({ ...current, online_url: value }))}
               placeholder="https://..."
+              disabled={!editable}
             />
             <FounderField
               label={locale === "ru" ? "Организатор" : "Organisator"}
               value={form.organizer}
               onChange={(value) => setForm((current) => ({ ...current, organizer: value }))}
+              disabled={!editable}
             />
             <FounderSelect
               label={locale === "ru" ? "Сообщество" : "Community"}
@@ -7256,12 +7649,14 @@ function FounderEventAdminPanel({
                   label: communityOption.name,
                 })),
               ]}
+              disabled={!editable}
             />
             <FounderField
               label={locale === "ru" ? "Banner URL (опционально)" : "Banner-URL (optional)"}
               value={form.cover_url}
               onChange={(value) => setForm((current) => ({ ...current, cover_url: value }))}
               placeholder="https://..."
+              disabled={!editable}
             />
           </div>
 
@@ -7283,6 +7678,7 @@ function FounderEventAdminPanel({
                   accept="image/*"
                   onChange={(eventInput) => void handleCoverUpload(eventInput)}
                   className="hidden"
+                  disabled={!editable}
                 />
                 {uploadingCover
                   ? locale === "ru"
@@ -7304,6 +7700,7 @@ function FounderEventAdminPanel({
             value={form.description}
             onChange={(value) => setForm((current) => ({ ...current, description: value }))}
             rows={5}
+            disabled={!editable}
           />
 
           {form.cover_url.trim() ? (
@@ -7322,16 +7719,20 @@ function FounderEventAdminPanel({
             <button
               type="button"
               onClick={() => void handleSave()}
-              disabled={saving || !form.title.trim() || !form.starts_at}
+              disabled={!editable || saving || !form.title.trim() || !form.starts_at}
               className="rounded-[20px] bg-[#007AFF] px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-[#1984ff] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {saving
                 ? locale === "ru"
                   ? "Сохраняем..."
                   : "Speichern..."
-                : locale === "ru"
-                  ? "Сохранить событие"
-                  : "Event speichern"}
+                : !editable
+                  ? locale === "ru"
+                    ? "Сохранение недоступно"
+                    : "Speichern nicht verfügbar"
+                  : locale === "ru"
+                    ? "Сохранить событие"
+                    : "Event speichern"}
             </button>
           </div>
         </div>
@@ -7346,12 +7747,14 @@ function FounderField({
   onChange,
   placeholder,
   type = "text",
+  disabled = false,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
   type?: string;
+  disabled?: boolean;
 }) {
   return (
     <label className="block">
@@ -7361,6 +7764,7 @@ function FounderField({
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
+        disabled={disabled}
         className="w-full rounded-[20px] border border-white/10 bg-white/[0.05] p-4 text-sm text-white outline-none placeholder:text-[#6F7B90] focus:border-[#007AFF] focus:bg-white/[0.08]"
       />
     </label>
@@ -7372,11 +7776,13 @@ function FounderTextarea({
   value,
   onChange,
   rows = 4,
+  disabled = false,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   rows?: number;
+  disabled?: boolean;
 }) {
   return (
     <label className="block">
@@ -7385,6 +7791,7 @@ function FounderTextarea({
         rows={rows}
         value={value}
         onChange={(event) => onChange(event.target.value)}
+        disabled={disabled}
         className="w-full rounded-[20px] border border-white/10 bg-white/[0.05] p-4 text-sm text-white outline-none placeholder:text-[#6F7B90] focus:border-[#007AFF] focus:bg-white/[0.08]"
       />
     </label>
@@ -7396,18 +7803,21 @@ function FounderSelect({
   value,
   onChange,
   options,
+  disabled = false,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   options: Array<{ value: string; label: string }>;
+  disabled?: boolean;
 }) {
   return (
     <label className="block">
       <span className="mb-2 block text-sm font-medium text-white">{label}</span>
-      <select
+        <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
+        disabled={disabled}
         className="w-full rounded-[20px] border border-white/10 bg-[#0b1220] p-4 text-sm text-white outline-none focus:border-[#007AFF]"
       >
         {options.map((option) => (
