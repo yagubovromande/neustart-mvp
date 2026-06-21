@@ -2988,12 +2988,12 @@ function AuthExperience({
   onSetLocale: (locale: Locale) => void;
 }) {
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#050816] text-[#F5F7FA]">
+    <main className="relative min-h-screen overflow-x-hidden overflow-y-auto bg-[#050816] text-[#F5F7FA]">
       <BackgroundAura />
       <div className="relative mx-auto flex min-h-screen max-w-[720px] items-center px-4 py-8 sm:px-6">
         <div className="w-full rounded-[34px] border border-white/10 bg-[rgba(7,11,22,0.78)] p-6 shadow-[0_50px_180px_-70px_rgba(0,0,0,0.95)] backdrop-blur-[28px] sm:p-8">
-          <div className="flex items-start justify-between gap-4">
-            <div>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0">
               <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[#8FA8D6]">
                 NeuStart
               </p>
@@ -3002,7 +3002,7 @@ function AuthExperience({
               </h1>
             </div>
 
-            <div className="flex h-9 items-center rounded-full border border-white/10 bg-white/[0.06] p-1 text-[11px] font-medium">
+            <div className="flex h-9 w-fit items-center rounded-full border border-white/10 bg-white/[0.06] p-1 text-[11px] font-medium">
               {(["ru", "de"] as const).map((item) => (
                 <button
                   key={item}
@@ -3022,7 +3022,7 @@ function AuthExperience({
           <div className="mt-8 flex gap-2">
             <button
               onClick={() => setAuthMode("signup")}
-              className={`rounded-full px-4 py-2 text-xs font-medium transition-all ${
+              className={`flex-1 rounded-full px-4 py-2.5 text-xs font-medium transition-all sm:flex-none ${
                 authMode === "signup"
                   ? "bg-[#007AFF] text-white"
                   : "border border-white/10 bg-white/[0.05] text-[#A8B6CB]"
@@ -3032,7 +3032,7 @@ function AuthExperience({
             </button>
             <button
               onClick={() => setAuthMode("login")}
-              className={`rounded-full px-4 py-2 text-xs font-medium transition-all ${
+              className={`flex-1 rounded-full px-4 py-2.5 text-xs font-medium transition-all sm:flex-none ${
                 authMode === "login"
                   ? "bg-[#007AFF] text-white"
                   : "border border-white/10 bg-white/[0.05] text-[#A8B6CB]"
@@ -3084,12 +3084,12 @@ function UserLoadingScreen({
   onSetLocale: (locale: Locale) => void;
 }) {
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#050816] text-[#F5F7FA]">
+    <main className="relative min-h-screen overflow-x-hidden overflow-y-auto bg-[#050816] text-[#F5F7FA]">
       <BackgroundAura />
       <div className="relative mx-auto flex min-h-screen max-w-[720px] items-center px-4 py-8 sm:px-6">
         <div className="w-full rounded-[34px] border border-white/10 bg-[rgba(7,11,22,0.78)] p-6 shadow-[0_50px_180px_-70px_rgba(0,0,0,0.95)] backdrop-blur-[28px] sm:p-8">
-          <div className="flex items-start justify-between gap-4">
-            <div>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0">
               <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-[#8FA8D6]">
                 NeuStart
               </p>
@@ -3098,7 +3098,7 @@ function UserLoadingScreen({
               </h1>
             </div>
 
-            <div className="flex h-9 items-center rounded-full border border-white/10 bg-white/[0.06] p-1 text-[11px] font-medium">
+            <div className="flex h-9 w-fit items-center rounded-full border border-white/10 bg-white/[0.06] p-1 text-[11px] font-medium">
               {(["ru", "de"] as const).map((item) => (
                 <button
                   key={item}
@@ -3142,11 +3142,11 @@ function AuthenticatedShell({
   children: ReactNode;
 }) {
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#050816] pb-[calc(112px+env(safe-area-inset-bottom))] text-[#F5F7FA]">
+    <main className="relative min-h-screen overflow-x-hidden overflow-y-auto bg-[#050816] pb-[calc(112px+env(safe-area-inset-bottom))] text-[#F5F7FA]">
       <BackgroundAura />
       <div className="relative mx-auto min-h-screen max-w-[720px] px-4 py-6 sm:px-6">
         <header className="sticky top-4 z-40 mb-6 rounded-[30px] border border-white/10 bg-[rgba(7,11,22,0.78)] px-4 py-4 shadow-[0_30px_100px_-50px_rgba(0,0,0,1)] backdrop-blur-[28px] sm:px-5">
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
               <div className="flex items-center gap-3">
                 <div className="flex h-11 w-11 items-center justify-center rounded-[16px] bg-[#007AFF] text-base font-semibold text-white shadow-[0_12px_32px_-18px_rgba(0,122,255,0.95)]">
@@ -3163,7 +3163,7 @@ function AuthenticatedShell({
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3 sm:justify-end">
               <div
                 className="flex h-9 items-center rounded-full border border-white/10 bg-white/[0.06] p-1 text-[11px] font-medium"
                 aria-label={locale === "ru" ? "Переключить язык" : "Sprache wechseln"}
@@ -3199,7 +3199,7 @@ function AuthenticatedShell({
 
               <button
                 onClick={() => void onLogout()}
-                className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-3 py-2 text-xs font-medium text-white"
+                className="inline-flex min-h-[40px] items-center justify-center gap-2 rounded-full border border-white/10 bg-white/[0.05] px-3 py-2 text-xs font-medium text-white"
               >
                 <LogOut className="h-4 w-4" />
                 {locale === "ru" ? "Выйти" : "Abmelden"}
@@ -3844,7 +3844,7 @@ function AppExperience({
             {activeScreen === "events" && (
               <div className="space-y-4">
                 <SmallSection title={t.app.eventsTitle} text={t.app.eventsText} />
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <SegmentedPill
                     active={eventFeedTab === "upcoming"}
                     label={isRuLocale ? "Скоро" : "Upcoming"}
@@ -3857,7 +3857,7 @@ function AppExperience({
                   />
                   <button
                     onClick={() => setScreen("communities")}
-                    className="ml-auto rounded-full border border-white/10 bg-white/[0.05] px-3 py-2 text-xs font-medium text-white"
+                    className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-2 text-xs font-medium text-white sm:ml-auto"
                   >
                     {isRuLocale ? "Сообщества" : "Communities"}
                   </button>
@@ -4112,7 +4112,7 @@ function AppExperience({
                         <label className="mb-3 block text-sm font-medium text-white">
                           {t.app.profilePhoto}
                         </label>
-                        <div className="flex items-center gap-4">
+                        <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center">
                           <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-[22px] border border-white/10 bg-white/[0.06] text-sm font-semibold text-white">
                             {profilePhotoPreview || profileForm.photoUrl ? (
                               // eslint-disable-next-line @next/next/no-img-element
@@ -4125,7 +4125,7 @@ function AppExperience({
                               getInitials(profileForm.name || authUser?.email?.split("@")[0] || "Neu Start")
                             )}
                           </div>
-                          <div className="flex-1 space-y-3">
+                          <div className="w-full flex-1 space-y-3">
                             <button
                               type="button"
                               onClick={() => avatarInputRef.current?.click()}
@@ -4275,7 +4275,7 @@ function AppExperience({
             </div>
           </div>
 
-          <nav className="fixed inset-x-4 bottom-[calc(14px+env(safe-area-inset-bottom))] z-40 mx-auto max-w-[430px] rounded-[24px] border border-white/10 bg-[rgba(10,16,30,0.9)] p-2 shadow-[0_24px_80px_-36px_rgba(0,0,0,1)] backdrop-blur-[28px]">
+          <nav className="fixed inset-x-3 bottom-[calc(14px+env(safe-area-inset-bottom))] z-40 mx-auto max-w-[430px] rounded-[24px] border border-white/10 bg-[rgba(10,16,30,0.9)] p-2 shadow-[0_24px_80px_-36px_rgba(0,0,0,1)] backdrop-blur-[28px] sm:inset-x-4">
             <div className="grid grid-cols-5 gap-1">
               {mobileNav.map((item) => (
                 <MobileNavButton
@@ -4369,14 +4369,14 @@ function CommunityListCard({
         fit="cover"
       />
       <button onClick={onOpen} className="w-full text-left">
-        <div className="flex items-start justify-between gap-3 px-4 pt-4">
-          <div>
+        <div className="flex flex-col gap-3 px-4 pt-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
             <p className="text-lg font-semibold text-white">{community.name}</p>
             <p className="mt-1 text-xs uppercase tracking-[0.2em] text-[#8FA8D6]">
               {[community.city, community.language, community.category].filter(Boolean).join(" • ")}
             </p>
           </div>
-          <span className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs text-[#C7D1E0]">
+          <span className="w-fit rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs text-[#C7D1E0]">
             {memberCount} {locale === "ru" ? "участ." : "Mitgl."}
           </span>
         </div>
@@ -4430,47 +4430,42 @@ function CommunityDetailCard({
         {locale === "ru" ? "Назад к сообществам" : "Zurück zu den Communities"}
       </button>
       <div className="overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.05] backdrop-blur-[24px]">
-        <BannerSurface
-          imageUrl={community.cover_url}
-          alt={community.name}
-          heightClassName="h-40"
-          fit="cover"
-        />
+        <BannerSurface imageUrl={community.cover_url} alt={community.name} heightClassName="h-40" fit="cover" />
         <div className="p-5">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-[#8FA8D6]">
-          {[community.city, community.language, community.category].filter(Boolean).join(" • ")}
-        </p>
-        <h3 className="mt-3 text-2xl font-semibold tracking-[-0.04em] text-white">{community.name}</h3>
-        <p className="mt-4 text-sm leading-7 text-[#C7D1E0]">{community.description || " "}</p>
-        <div className="mt-4 rounded-[20px] border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-[#D3DCE8]">
-          {locale === "ru" ? "Участников" : "Mitglieder"}: {memberCount}
-        </div>
-        {memberCount === 0 ? (
-          <p className="mt-3 text-sm text-[#8A94A6]">
-            {locale === "ru"
-              ? "Пока в этом сообществе нет участников. Вы можете присоединиться первым."
-              : "Noch keine Mitglieder in dieser Community. Du kannst als Erste:r beitreten."}
+          <p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-[#8FA8D6]">
+            {[community.city, community.language, community.category].filter(Boolean).join(" • ")}
           </p>
-        ) : null}
-        <button
-          onClick={joined ? onLeave : onJoin}
-          disabled={loading}
-          className={`mt-4 w-full rounded-[20px] px-4 py-3 text-sm font-medium ${
-            joined ? "border border-white/10 bg-white/[0.05] text-white" : "bg-[#007AFF] text-white"
-          }`}
-        >
-          {loading
-            ? locale === "ru"
-              ? "Сохраняем..."
-              : "Speichern..."
-            : joined
+          <h3 className="mt-3 text-2xl font-semibold tracking-[-0.04em] text-white">{community.name}</h3>
+          <p className="mt-4 text-sm leading-7 text-[#C7D1E0]">{community.description || " "}</p>
+          <div className="mt-4 rounded-[20px] border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-[#D3DCE8]">
+            {locale === "ru" ? "Участников" : "Mitglieder"}: {memberCount}
+          </div>
+          {memberCount === 0 ? (
+            <p className="mt-3 text-sm text-[#8A94A6]">
+              {locale === "ru"
+                ? "Пока в этом сообществе нет участников. Вы можете присоединиться первым."
+                : "Noch keine Mitglieder in dieser Community. Du kannst als Erste:r beitreten."}
+            </p>
+          ) : null}
+          <button
+            onClick={joined ? onLeave : onJoin}
+            disabled={loading}
+            className={`mt-4 w-full rounded-[20px] px-4 py-3 text-sm font-medium ${
+              joined ? "border border-white/10 bg-white/[0.05] text-white" : "bg-[#007AFF] text-white"
+            }`}
+          >
+            {loading
               ? locale === "ru"
-                ? "Покинуть сообщество"
-                : "Community verlassen"
-              : locale === "ru"
-                ? "Вступить в сообщество"
-                : "Community beitreten"}
-        </button>
+                ? "Сохраняем..."
+                : "Speichern..."
+              : joined
+                ? locale === "ru"
+                  ? "Покинуть сообщество"
+                  : "Community verlassen"
+                : locale === "ru"
+                  ? "Вступить в сообщество"
+                  : "Community beitreten"}
+          </button>
         </div>
       </div>
     </div>
@@ -4505,15 +4500,15 @@ function EventListCard({
       <button onClick={onOpen} className="block w-full text-left">
         <BannerSurface imageUrl={event.cover_url} alt={event.title} heightClassName="h-32" fit="cover" />
         <div className="space-y-3 p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0">
               <p className="text-lg font-semibold text-white">{event.title}</p>
               <p className="mt-1 text-xs uppercase tracking-[0.2em] text-[#8FA8D6]">
                 {[event.category, event.language].filter(Boolean).join(" • ")}
               </p>
             </div>
             {communityName ? (
-              <span className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs text-[#C7D1E0]">
+              <span className="w-fit rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs text-[#C7D1E0]">
                 {communityName}
               </span>
             ) : null}
@@ -4597,15 +4592,15 @@ function EventDetailCard({
       <div className="overflow-hidden rounded-[28px] border border-white/10 bg-white/[0.05] backdrop-blur-[24px]">
         <BannerSurface imageUrl={event.cover_url} alt={event.title} heightClassName="h-40" fit="cover" />
         <div className="space-y-4 p-5">
-          <div className="flex items-start justify-between gap-3">
-            <div>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0">
               <p className="text-[11px] font-semibold uppercase tracking-[0.26em] text-[#8FA8D6]">
                 {[event.category, event.language].filter(Boolean).join(" • ")}
               </p>
               <h3 className="mt-3 text-2xl font-semibold tracking-[-0.04em] text-white">{event.title}</h3>
             </div>
             {communityName ? (
-              <span className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs text-[#C7D1E0]">
+              <span className="w-fit rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-xs text-[#C7D1E0]">
                 {communityName}
               </span>
             ) : null}
@@ -6011,15 +6006,15 @@ function PeopleDiscoveryCard({
             getInitials(person.name)
           )}
         </div>
-        <div className="flex-1">
-          <div className="flex items-start justify-between gap-2">
-            <div>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0">
               <h4 className="font-medium text-white">{person.name}</h4>
               <p className="text-sm text-[#8A94A6]">
                 {person.city} • {person.profession}
               </p>
             </div>
-            <span className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-[11px] font-medium text-[#8EC5FF]">
+            <span className="w-fit rounded-full border border-white/10 bg-white/[0.05] px-3 py-1 text-[11px] font-medium text-[#8EC5FF]">
               {person.language}
             </span>
           </div>
@@ -6036,7 +6031,7 @@ function PeopleDiscoveryCard({
       <button
         onClick={onAdd}
         disabled={addDisabled}
-        className="mt-4 rounded-[18px] bg-[#007AFF] px-4 py-3 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
+        className="mt-4 w-full rounded-[18px] bg-[#007AFF] px-4 py-3 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
       >
         {addLabel}
       </button>
@@ -6081,7 +6076,7 @@ function PersonDetailCard({
         {backLabel}
       </button>
 
-      <div className="mt-4 flex items-start gap-4">
+      <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-start">
         <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-[24px] border border-white/10 bg-white/[0.06] text-lg font-semibold text-white">
           {person.photoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -6350,8 +6345,8 @@ function RequestInboxCard({
           )}
         </div>
         <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-3">
-            <div>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0">
               <h4 className="font-medium text-white">{person.name}</h4>
               <p className="mt-1 text-sm text-[#8A94A6]">{person.city}</p>
             </div>
@@ -6429,8 +6424,8 @@ function ChatCard({
   };
 
   return (
-    <div className="rounded-[28px] border border-white/10 bg-white/[0.05] p-4">
-      <div className="flex items-center justify-between gap-3 border-b border-white/8 pb-4">
+    <div className="rounded-[28px] border border-white/10 bg-white/[0.05] p-3 sm:p-4">
+      <div className="flex flex-col gap-3 border-b border-white/8 pb-4 sm:flex-row sm:items-center sm:justify-between">
         <button
           onClick={onBack}
           className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-2 text-xs font-medium text-[#D8E6FF]"
@@ -6459,7 +6454,7 @@ function ChatCard({
         </div>
       </div>
 
-      <div className="mt-4 h-[360px] space-y-3 overflow-y-auto rounded-[22px] border border-white/8 bg-black/10 p-3">
+      <div className="mt-4 min-h-[280px] max-h-[46svh] space-y-3 overflow-y-auto rounded-[22px] border border-white/8 bg-black/10 p-3 sm:h-[360px] sm:max-h-none">
         {loading && <InlineNote text={locale === "ru" ? "Чат загружается..." : "Chat wird geladen..."} />}
         {!loading && messages.length === 0 && (
           <EmptyMobileCard
@@ -6484,17 +6479,17 @@ function ChatCard({
 
       {feedback && <InlineNote text={feedback} tone="warning" className="mt-4" />}
 
-      <div className="mt-4 flex items-end gap-3">
+      <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">
         <textarea
           value={message}
           onChange={(event) => setMessage(event.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={locale === "ru" ? "Напишите сообщение..." : "Schreibe eine Nachricht..."}
-          className="min-h-[56px] flex-1 rounded-[20px] border border-white/10 bg-white/[0.05] p-4 text-sm text-white outline-none placeholder:text-[#6F7B90] focus:border-[#007AFF] focus:bg-white/[0.08]"
+          className="min-h-[56px] w-full flex-1 resize-none rounded-[20px] border border-white/10 bg-white/[0.05] p-4 text-sm text-white outline-none placeholder:text-[#6F7B90] focus:border-[#007AFF] focus:bg-white/[0.08]"
         />
         <button
           onClick={onSend}
-          className="inline-flex h-[56px] items-center gap-2 rounded-[20px] bg-[#007AFF] px-4 text-sm font-medium text-white"
+          className="inline-flex h-[56px] w-full items-center justify-center gap-2 rounded-[20px] bg-[#007AFF] px-4 text-sm font-medium text-white sm:w-auto"
         >
           <SendHorizonal className="h-4 w-4" />
           {locale === "ru" ? "Отправить" : "Senden"}
@@ -6568,8 +6563,8 @@ function ConnectionRequestModal({
         ];
 
   return (
-    <div className="fixed inset-0 z-[90] flex items-center justify-center bg-[#02050f]/75 px-4 backdrop-blur-md">
-      <div className="w-full max-w-[420px] rounded-[32px] border border-white/10 bg-[linear-gradient(180deg,rgba(10,16,30,0.98),rgba(8,12,24,0.98))] p-5 shadow-[0_40px_120px_-50px_rgba(0,0,0,1)]">
+    <div className="fixed inset-0 z-[90] flex items-end justify-center overflow-y-auto bg-[#02050f]/75 px-4 py-6 backdrop-blur-md sm:items-center">
+      <div className="max-h-[calc(100svh-2rem)] w-full max-w-[420px] overflow-y-auto rounded-[32px] border border-white/10 bg-[linear-gradient(180deg,rgba(10,16,30,0.98),rgba(8,12,24,0.98))] p-5 shadow-[0_40px_120px_-50px_rgba(0,0,0,1)]">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[#8FA8D6]">
