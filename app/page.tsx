@@ -280,6 +280,7 @@ type AppUiCache = {
   requestsLoaded: boolean;
   notifications: NotificationRow[];
   chatThreads: ChatThreadSummary[];
+  chatsLoaded: boolean;
 };
 
 const appUiCache: AppUiCache = {
@@ -294,6 +295,7 @@ const appUiCache: AppUiCache = {
   requestsLoaded: false,
   notifications: [],
   chatThreads: [],
+  chatsLoaded: false,
 };
 
 const authStateCache: {
@@ -314,6 +316,7 @@ function resetAuthenticatedUiCache() {
   appUiCache.requestsLoaded = false;
   appUiCache.notifications = [];
   appUiCache.chatThreads = [];
+  appUiCache.chatsLoaded = false;
 }
 
 function resetAuthStateCache() {
@@ -704,6 +707,7 @@ export default function HomePage() {
   const [chatMessage, setChatMessage] = useState("");
   const [chatFeedback, setChatFeedback] = useState<string | null>(null);
   const [chatThreads, setChatThreads] = useState<ChatThreadSummary[]>(appUiCache.chatThreads);
+  const [chatsLoaded, setChatsLoaded] = useState(appUiCache.chatsLoaded);
   const [chatsLoading, setChatsLoading] = useState(
     isSupabaseConfigured && appUiCache.chatThreads.length === 0,
   );
@@ -817,7 +821,15 @@ export default function HomePage() {
       ? publicPeople.filter((person) => person.userId && acceptedContactUserIds.includes(person.userId))
       : fallbackContactPeople;
   const requestPeople = publicPeople.filter((person) => person.userId);
+  const chatThreadPartner =
+    (chatRouteUserId
+      ? chatThreads.find(
+          (thread) =>
+            thread.partner.userId === chatRouteUserId || String(thread.partner.id) === chatRouteUserId,
+        )?.partner
+      : undefined) ?? undefined;
   const chatPartner =
+    chatThreadPartner ??
     (chatRouteUserId
       ? requestPeople.find(
           (person) => person.userId === chatRouteUserId || String(person.id) === chatRouteUserId,
@@ -943,7 +955,9 @@ export default function HomePage() {
     appUiCache.requestsLoaded = requestsLoaded;
     appUiCache.notifications = notifications;
     appUiCache.chatThreads = chatThreads;
+    appUiCache.chatsLoaded = chatsLoaded;
   }, [
+    chatsLoaded,
     chatThreads,
     connectionRequests,
     currentProfile,
@@ -1798,6 +1812,7 @@ export default function HomePage() {
     if (!supabase) {
       if (isMountedRef.current) {
         setChatThreads([]);
+        setChatsLoaded(true);
         setChatsLoading(false);
       }
       return;
@@ -1819,41 +1834,89 @@ export default function HomePage() {
 
     if (error) {
       console.error(error);
+      setChatsLoaded(true);
       setChatsLoading(false);
       return;
     }
 
     const rows = (data as ChatMessageRow[]) ?? [];
-    const acceptedByUserId = new Map(contactPeople.map((person) => [person.userId, person] as const));
-    const summaries: ChatThreadSummary[] = contactPeople
-      .map((person) => {
-        const partnerUserId = person.userId;
+    const latestMessageByPartnerId = new Map<string, ChatMessageRow>();
+    const peopleByUserId = new Map<string, Person>();
 
-        if (!partnerUserId) {
-          return null;
+    for (const person of publicPeople) {
+      if (person.userId) {
+        peopleByUserId.set(person.userId, person);
+      }
+    }
+
+    for (const person of contactPeople) {
+      if (person.userId && !peopleByUserId.has(person.userId)) {
+        peopleByUserId.set(person.userId, person);
+      }
+    }
+
+    const partnerUserIds = new Set<string>();
+
+    for (const row of rows) {
+      const partnerUserId = row.sender_user_id === userId ? row.recipient_user_id : row.sender_user_id;
+
+      if (partnerUserId && partnerUserId !== userId) {
+        partnerUserIds.add(partnerUserId);
+        if (!latestMessageByPartnerId.has(partnerUserId)) {
+          latestMessageByPartnerId.set(partnerUserId, row);
         }
+      }
+    }
 
-        const partnerMessages = rows.filter(
-          (item) =>
-            (item.sender_user_id === userId && item.recipient_user_id === partnerUserId) ||
-            (item.sender_user_id === partnerUserId && item.recipient_user_id === userId),
-        );
-        const latestMessage = partnerMessages[0];
-        const unreadNotifications = (notificationRows ?? unreadChatNotifications).filter(
-          (item) => !item.is_read,
-        );
+    const acceptedRequestsByPartnerId = new Map<string, ConnectionRequestRow>();
+
+    for (const request of connectionRequests) {
+      if (request.status !== "accepted") {
+        continue;
+      }
+
+      if (request.from_user_id === userId) {
+        partnerUserIds.add(request.to_user_id);
+        acceptedRequestsByPartnerId.set(request.to_user_id, request);
+      } else if (request.to_user_id === userId) {
+        partnerUserIds.add(request.from_user_id);
+        acceptedRequestsByPartnerId.set(request.from_user_id, request);
+      }
+    }
+
+    const missingProfileIds = Array.from(partnerUserIds).filter((partnerUserId) => !peopleByUserId.has(partnerUserId));
+
+    if (missingProfileIds.length > 0) {
+      const { data: profileRows, error: profileError } = await supabase
+        .from("profiles")
+        .select("*")
+        .in("user_id", missingProfileIds);
+
+      if (profileError) {
+        warnInDevelopment("Chat partner profiles could not be loaded.", profileError);
+      } else {
+        for (const [index, profile] of ((profileRows ?? []) as ProfileRow[]).entries()) {
+          if (profile.user_id) {
+            peopleByUserId.set(profile.user_id, mapChatProfileToPerson(profile, locale, rows.length + index));
+          }
+        }
+      }
+    }
+
+    const unreadNotifications = (notificationRows ?? unreadChatNotifications).filter(
+      (item) => !item.is_read,
+    );
+
+    const summaries: ChatThreadSummary[] = Array.from(partnerUserIds)
+      .map((partnerUserId, index) => {
+        const latestMessage = latestMessageByPartnerId.get(partnerUserId);
         const unreadCount = unreadNotifications.filter(
           (item) => item.related_chat_user_id === partnerUserId,
         ).length;
-        const acceptedRequest = connectionRequests.find(
-          (item) =>
-            item.status === "accepted" &&
-            ((item.from_user_id === userId && item.to_user_id === partnerUserId) ||
-              (item.from_user_id === partnerUserId && item.to_user_id === userId)),
-        );
+        const acceptedRequest = acceptedRequestsByPartnerId.get(partnerUserId);
 
         return {
-          partner: acceptedByUserId.get(partnerUserId) ?? person,
+          partner: peopleByUserId.get(partnerUserId) ?? createFallbackChatPartner(partnerUserId, locale, index),
           lastMessage:
             latestMessage?.message ??
             (locale === "ru"
@@ -1864,10 +1927,10 @@ export default function HomePage() {
           hasUnread: unreadCount > 0,
         } satisfies ChatThreadSummary;
       })
-      .filter(Boolean)
-      .sort((left, right) => new Date(right!.lastActivityAt).getTime() - new Date(left!.lastActivityAt).getTime()) as ChatThreadSummary[];
+      .sort((left, right) => new Date(right.lastActivityAt).getTime() - new Date(left.lastActivityAt).getTime());
 
     setChatThreads(summaries);
+    setChatsLoaded(true);
     setChatsLoading(false);
   }
 
@@ -2260,18 +2323,22 @@ export default function HomePage() {
       return;
     }
 
-    const { error: notificationError } = await supabase.from("notifications").insert({
-      user_id: chatPartner.userId,
-      type: "chat_message",
-      title: locale === "ru" ? "Новое сообщение" : "Neue Nachricht",
-      body: messageToSend.slice(0, 180),
-      related_user_id: authUser.id,
-      related_chat_user_id: authUser.id,
-      is_read: false,
-    });
+    try {
+      const { error: notificationError } = await supabase.from("notifications").insert({
+        user_id: chatPartner.userId,
+        type: "chat_message",
+        title: locale === "ru" ? "Новое сообщение" : "Neue Nachricht",
+        body: messageToSend.slice(0, 180),
+        related_user_id: authUser.id,
+        related_chat_user_id: authUser.id,
+        is_read: false,
+      });
 
-    if (notificationError) {
-      console.error(notificationError);
+      if (notificationError) {
+        warnInDevelopment("Chat notification could not be saved.", notificationError);
+      }
+    } catch (notificationError) {
+      warnInDevelopment("Chat notification creation failed.", notificationError);
     }
 
     setChatMessage("");
@@ -2707,6 +2774,7 @@ export default function HomePage() {
           social={social}
           hasProfile={Boolean(currentProfile)}
           chatThreads={chatThreads}
+          chatsLoaded={chatsLoaded}
           chatsLoading={chatsLoading || notificationsLoading}
           unreadChatCount={unreadChatCount}
           chatPartner={chatPartner}
@@ -2879,6 +2947,7 @@ export default function HomePage() {
                 social={social}
                 hasProfile={Boolean(currentProfile)}
                 chatThreads={chatThreads}
+                chatsLoaded={chatsLoaded}
                 chatsLoading={chatsLoading || notificationsLoading}
                 unreadChatCount={unreadChatCount}
                 chatPartner={chatPartner}
@@ -3395,6 +3464,7 @@ function AppExperience({
   social,
   hasProfile,
   chatThreads,
+  chatsLoaded,
   chatsLoading,
   unreadChatCount,
   chatPartner,
@@ -3482,6 +3552,7 @@ function AppExperience({
   social: (typeof socialCopy)[Locale];
   hasProfile: boolean;
   chatThreads: ChatThreadSummary[];
+  chatsLoaded: boolean;
   chatsLoading: boolean;
   unreadChatCount: number;
   chatPartner: Person | undefined;
@@ -3557,7 +3628,8 @@ function AppExperience({
     supabaseConfigured &&
     authUser !== null &&
     (!hasResolvedPeopleData || !hasResolvedConnectionStates);
-  const shouldShowChatsLoading = chatsLoading && chatThreads.length === 0;
+  const shouldShowChatsLoading =
+    supabaseConfigured && Boolean(authUser) && (!chatsLoaded || chatsLoading) && chatThreads.length === 0;
   const shouldShowCommunitiesLoading = communitiesLoading || communityMembersLoading;
   const shouldShowEventsLoading = eventsLoading || eventRsvpsLoading;
   const communityLoadMessage =
@@ -4067,11 +4139,11 @@ function AppExperience({
                   <LoadingCard lines={3} />
                 ) : chatThreads.length === 0 ? (
                   <EmptyMobileCard
-                    title={isRuLocale ? "Пока нет знакомств." : "Noch keine Bekanntschaften."}
+                    title={isRuLocale ? "Пока нет чатов" : "Noch keine Chats"}
                     text={
                       isRuLocale
-                        ? "Познакомьтесь с людьми во вкладке «Люди»."
-                        : "Lerne Menschen im Bereich „Menschen“ kennen."
+                        ? "Когда у вас появятся переписки или подтверждённые контакты, они появятся здесь."
+                        : "Sobald du Nachrichten oder bestätigte Kontakte hast, erscheinen sie hier."
                     }
                   />
                 ) : (
@@ -8398,6 +8470,44 @@ function mapProfileToPerson(profile: ProfileRow, locale: Locale, index: number):
     reason: socialCopy[locale].freshStart,
     status: socialCopy[locale].activeProfile,
   };
+}
+
+function mapChatProfileToPerson(profile: ProfileRow, locale: Locale, index: number): Person {
+  const basePerson = mapProfileToPerson(profile, locale, index);
+
+  return {
+    ...basePerson,
+    name: profile.name?.trim() || shortenUserId(profile.user_id),
+    city: profile.city?.trim() || (locale === "ru" ? "Германия" : "Deutschland"),
+    about:
+      profile.about?.trim() ||
+      (locale === "ru" ? "Профиль пока недоступен." : "Profil ist derzeit nicht verfügbar."),
+  };
+}
+
+function createFallbackChatPartner(userId: string, locale: Locale, index: number): Person {
+  return {
+    id: stringToNumberId(`${userId}-${index}`),
+    userId,
+    name: shortenUserId(userId),
+    age: 0,
+    city: locale === "ru" ? "Германия" : "Deutschland",
+    profession: locale === "ru" ? "Участник сообщества" : "Community-Mitglied",
+    language: locale === "ru" ? "Не указано" : "Nicht angegeben",
+    about: locale === "ru" ? "Профиль пока недоступен." : "Profil ist derzeit nicht verfügbar.",
+    interests: [],
+    lookingFor: [],
+    reason: socialCopy[locale].freshStart,
+    status: socialCopy[locale].activeProfile,
+  };
+}
+
+function shortenUserId(userId: string) {
+  if (userId.length <= 12) {
+    return userId;
+  }
+
+  return `${userId.slice(0, 6)}…${userId.slice(-4)}`;
 }
 
 function stringToNumberId(value: string) {
