@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "NeuStart MVP",
+  title: "NeuStart",
   description:
-    "NeuStart is a Telegram Mini App MVP for community discovery, support, and integration services for late repatriates in Germany.",
+    "NeuStart ist eine Community-Plattform fur neue Ankommende in Deutschland.",
 };
 
 export default function RootLayout({
